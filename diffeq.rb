@@ -16,12 +16,12 @@ end
 
 # Some helper methods to make code a bit nicer
 class Array
-  def sum(init)
-    self.inject(init) {|l,r| l+r}
+  def sum(init=0)
+    self.inject(init) {|sum, obj| sum + (block_given? ? yield(obj) : obj)}
   end
 
-  def product(init)
-    self.inject(init) {|l,r| l*r}
+  def product(init=1)
+    self.inject(init) {|prod, obj| prod * (block_given? ? yield(obj) : obj)}
   end
 
   def dup
@@ -234,7 +234,7 @@ class Array
 
   def parseCoefs
     self.consume(:x, :y, :derivative, :num) {|stack|
-      coef = stack.gather(:num).map {|n, d| d}.product(1)
+      coef = stack.gather(:num).product {|n, d| d}
       stack.gather(:x, :y, :derivative).unshift [:num, coef]
     }
   end
@@ -248,7 +248,7 @@ class Array
 
   def parseFunctions
     self.translate(:y) { [:derivative, 0] }.consume(:derivative) {|stack|
-      [:derivative, stack.map {|sym, d| d}.sum(0)]
+      [:derivative, stack.sum {|sym, d| d}]
     }
   end
 
