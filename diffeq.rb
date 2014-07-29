@@ -442,7 +442,9 @@ class Layout
     @diffeq = @tokens.to_hash
   end
 
-  def layout
+  def layout(output=0)
+    output = output.to_i
+
     nodes, int, fan, mult = [], 1, 1, 1
     arr = (0..(@diffeq[:lhs]-1)).to_a.reverse
 
@@ -451,7 +453,7 @@ class Layout
       int += 1
 
       # If order is defined in @diffeq then we need to copy it and send it back
-      if @diffeq.include?(order) then
+      if @diffeq.include?(order) && order > 0 then
         node[:fan] = fan
         fan += 1
         unless @diffeq[order].to_f == 1.0 then
@@ -460,16 +462,20 @@ class Layout
           mult += 1
         end
       end
+
+      node[:out] = true if order == output
+      node[:order] = order
+
       nodes << node
     }
 
     nodes
   end
 
-  def self.script(input, quiet=false)
+  def self.script(input, quiet=false, *args)
     lo = Layout.new(input, quiet)
     p lo.instance_eval {@diffeq}
-    p lo.layout
+    p lo.layout(*args)
   end
 end
 
@@ -486,4 +492,4 @@ end
 
 
 #script(Tokens, true)
-script(Layout, true)
+script(Layout, true, *ARGV)
