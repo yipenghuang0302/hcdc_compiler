@@ -174,6 +174,11 @@ end
 
 # Tokens will always be held in arrays
 class Array
+  def prohibitX
+    error("Currently does not support using x", -1) if hasTokens?(:x)
+    self
+  end
+
   def parseNumbers
     self.consume(:digit, :dot) {|stack|
       stack.unshift [:digit, 0]
@@ -206,7 +211,7 @@ class Array
 
   def sides
     equals = self.request(:equals)
-    return [self, [:num, 0]] if equals.nil?
+    return [self, [[:num, 0]]] if equals.nil?
     left = self.take_while {|t| t[0] != :equals}
     right = self.drop_while {|t| t[0] != :equals}
     right.shift
@@ -229,34 +234,32 @@ class Array
   def parsePrimes
     self.consume(:prime) {|stack|
       [:derivative, stack.length]
+    }.consume(:y, :derivative) {|stack|
+      derivatives = []
+      while !stack.empty?
+        item = stack.shift
+        if item[0] == :y then
+          derivatives << [:derivative, 0]
+        else
+          derivatives[-1][-1] += item[-1]
+        end
+      end
+      derivatives
     }
   end
 
   def parseCoefs
-    self.consume(:x, :y, :derivative, :num) {|stack|
+    self.consume(:x, :derivative, :num) {|stack|
       coef = stack.gather(:num).product {|n, d| d}
-      stack.gather(:x, :y, :derivative).unshift [:num, coef]
-    }
-  end
-
-  def checkLinear
-    self.consume(:x, :y, :derivative) {|stack|
-      error("Cannot have x and y (or its derivatives) multiplied together.", -1) if stack.gather(:x, :y).length > 1
-    }
-    self
-  end
-
-  def parseFunctions
-    self.translate(:y) { [:derivative, 0] }.consume(:derivative) {|stack|
-      [:derivative, stack.sum {|sym, d| d}]
+      stack.gather(:x, :derivative).unshift [:num, coef]
     }
   end
 
   def parseTerms
     unsigned = self.consume(:x, :derivative, :num) {|stack|
       coef = stack.demand(:num)
-      term = stack.request(:x, :derivative)
-      [:term, coef[1], *(term || [:constant])]
+      term = stack.gather(:x, :derivative)
+      [:term, coef[1], *term]
     }
     unsigned.unshift [:plus]
     unsigned.parseSigns.combine([:plus, :minus], [:term]) {|sign, term|
@@ -266,46 +269,44 @@ class Array
   end
 
   def combineTerms
-    terms = self.inject(Hash.new) {|h, t|
-      key = [:x, :constant].include?(t[2]) ? t[2] : t[3]
+    self.map {|sym, coef, *factors|
+      xs = factors.gather(:x).length
+      orders = factors.gather(:derivative).map {|d| d[-1]}.sort.reverse
+      [coef, xs, orders]
+    }.inject(Hash.new) {|h, (coef, xs, orders)|
+      key = [xs, *orders]
       h[key] ||= 0
-      h[key] += t[1]
+      h[key] += coef
       h
-    }
-    keys = terms.keys.sort_by {|k|
-      k.is_a?(Integer) ? -k : (k == :x) ? 1 : 2
-    }
-    keys.map {|k|
-      data = k.is_a?(Integer) ? [:derivative, k] : [k]
-      [*data, terms[k]]
-    }
+    }.map {|(xs, *orders), coef|
+      [:term, coef, [:x, xs], [:derivatives, *orders]]
+    }.sort_by {|sym, coef, (x, xs), (d, *orders)|
+      [orders.sum, -orders.length, *orders, xs]
+    }.reverse
   end
 
   def dropZeroes
-    self.reject {|d| d[-1] == 0 || d[-1] == 0.0}
-  end
-
-  def prohibitX
-    error("Currently does not support using x", -1) if hasTokens?(:x)
-    self
+    self.reject {|d| [0, 0.0].include?(d[1])}
   end
 
   def normalize
-    # :derivative should be all that's left besides constant now...
-    lowest = self.gather(:derivative).map {|d| d[1]}.min
-    self.translate(:derivative) {|d|
-      d = d.dup
-      d[1] -= lowest
-      d
+    return self if self.any? {|sym, coef, (x, xs), (d, *orders)| xs > 0 || orders.empty?}
+    lowest = self.map {|sym, coef, (x, xs), (d, *orders)| orders.min}.min
+    self.map {|sym, coef, (x, xs), (d, *orders)|
+      [sym, coef, [x, xs], [d, *orders.map {|order| order - lowest}]]
     }
   end
 
   def monic
-    factor = self[0][-1]
-    self.map {|term|
-      term = term.dup
-      term[-1] = term[-1].niceDiv(factor)
-      term
+    # We need to demand that the high order term is a monomial
+    highest = self.map {|sym, coef, (x, xs), (d, *orders)| orders.max || 0}.max || 0
+    badprod = self.any? {|sym, coef, (x, xs), (d, *orders)|
+      orders.include?(highest) && orders.length > 1 || xs > 0
+    }
+    error("Cannot have highest order term with multiple factors", -1) if badprod
+    factor = self[0][1] # This should be the highest coefficient
+    self.map {|sym, coef, x, orders|
+      [sym, coef.niceDiv(factor), x, orders]
     }
   end
 
@@ -320,13 +321,12 @@ class Array
   end
 
   def asEquation
-    if [:x, :constant].include?(self[0][0]) then
-      self + [[:equals], [:constant, 0]]
+    sym, coef, (x, xs), (d, *orders) = *self[0]
+    if orders.empty? then
+      self + [[:equals], [:term, 0, [:x, 0], [:derivative]]]
     else
-      [self[0]] + [[:equals]] + self[1...(self.length)].map {|term|
-        term = term.dup
-        term[-1] *= -1
-        term
+      [self[0]] + [[:equals]] + self[1...(self.length)].map {|sym, coef, x, orders|
+        [sym, coef * -1, x, orders]
       }
     end
   end
@@ -372,18 +372,16 @@ class Tokens
     return nil if @parsed
     @parsed = true
     self.show("Tokens are")
+        .prohibitX("Checking that x is not present")
         .parseNumbers("With numbers parsed")
         .parseSigns("With signs parsed")
         .checkPrimes("With primes validated")
         .balanceToZero("All terms on the left")
         .parsePrimes("With primes parsed")
         .parseCoefs("With coefficients parsed")
-        .checkLinear("Validating equation is linear")
-        .parseFunctions("With functions parsed")
         .parseTerms("With terms parsed")
         .combineTerms("With terms combined")
         .dropZeroes("Without zero coefs")
-        .prohibitX("Checking that x is not present")
         .normalize("Normalizing so that y is lowest order term")
         .monic("Monic")
         .asEquation("As an equation")
@@ -408,20 +406,14 @@ class Tokens
   def to_s
     return @toks.map {|t| t.inspect}.join("; ") unless @parsed
 
-    left, right = @toks.map {|t|
-      case t[0]
-        when :derivative
-          t[2].to_s + ' y' + ("'" * t[1])
-        when :x
-          t[1].to_s + ' x'
-        when :constant
-          t[1].to_s
-        when :equals
-          [:equals] # Otherwise sides won't work
-      end
-    }.sides
+    left, right = @toks.translate(:term) {|sym, coef, (x, xs), (d, *orders)|
+      xstr = (xs > 0) ? "x^#{xs}" : ""
+      ystr = orders.map {|o| "y" + ("'" * o)}.join(" ")
+      string = [coef, xstr, ystr].join(" ")
+      [:term, string]
+    }.sides.map {|side| side.map {|sym, str| str}}
 
-    left.join(' + ') + ' = ' + right.join(' + ')
+    (left.join(' + ') + ' = ' + right.join(' + ')).gsub(/\s+/, " ")
   end
 
   def self.script(input, quiet = false)
