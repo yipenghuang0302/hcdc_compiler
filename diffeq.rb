@@ -380,16 +380,33 @@ class Tokens
   end
 
   def to_hash
+    term_to_hash = proc {|sym, coef, (x, xs), (d, *orders)|
+      { :coef => coef,
+        :xs => xs,
+        :orders => orders }
+    }
     parse! unless @parsed
     left, right = @toks.sides
-    orders = right.gather(:derivative).sort_by {|d| -d[1]}
+    left.map!(&term_to_hash)
+    right.map!(&term_to_hash)
+
+    error("LHS should be exactly one term") if left.length != 1
+    error("LHS should not have x factor") if left[0][:xs] > 0
+    error("LHS should have one factor") if left[0][:orders].length > 1
+
+    constant = right.select {|term| term[:xs] == 0 && term[:orders].empty?}
+    error("RHS has more than one constant term") if constant.length > 1
+    terms = right.select {|term| term[:xs] > 0 || !term[:orders].empty?}
 
     result = {
-      :lhs => left[0][1],
-      :constant => (right.request(:constant) || [nil])[-1],
-      :orders => orders.map {|d| d[1]}
+      :lhs => left[0],
+      :constant => constant.empty? ? 0 : constant[0][:coef],
+      :terms => terms.empty? ? nil : terms
     }.compact
-    orders.each {|d| result[d[1]] = d[2]}
+    result[:hash] = result[:terms].inject(Hash.new) {|h, term|
+      key = [term[:xs], *term[:orders]]
+      h.update(key => term[:coef])
+    }
 
     result
   end
