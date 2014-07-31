@@ -310,16 +310,6 @@ class Array
     }
   end
 
-  def scaled
-    factors = self.map {|term| term[-1]}
-    scale = [factors.min.abs, factors.max.abs].max
-    self.map {|term|
-      term = term.dup
-      term[-1] = term[-1].niceDiv(scale)
-      term
-    }
-  end
-
   def asEquation
     sym, coef, (x, xs), (d, *orders) = *self[0]
     if orders.empty? then
