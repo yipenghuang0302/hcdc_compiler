@@ -315,9 +315,10 @@ class Array
     if orders.empty? then
       self + [[:equals], [:term, 0, [:x, 0], [:derivative]]]
     else
-      [self[0]] + [[:equals]] + self[1...(self.length)].map {|sym, coef, x, orders|
-        [sym, coef * -1, x, orders]
-      }
+      left = [self[0]]
+      right = self[1...(self.length)].map {|sym, coef, x, orders| [sym, coef * -1, x, orders]}
+      right << [:term, 0, [:x, 0], [:derivatives]] if right.empty?
+      left + [[:equals]] + right
     end
   end
 
