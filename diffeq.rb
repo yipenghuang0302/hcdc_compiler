@@ -281,7 +281,7 @@ class Array
     }.map {|(xs, *orders), coef|
       [:term, coef, [:x, xs], [:derivatives, *orders]]
     }.sort_by {|sym, coef, (x, xs), (d, *orders)|
-      [orders.sum, -orders.length, *orders, xs]
+      [orders.max || 0, orders.sum, orders.length, xs, *orders]
     }.reverse
   end
 
