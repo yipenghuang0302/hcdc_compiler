@@ -432,7 +432,7 @@ class Tokens
   end
 end
 
-class Layout
+class Connections
   @tokens, @diffeq = nil
   def initialize(input, quiet=false)
     @tokens = Tokens.new(input.tokenize)
@@ -442,9 +442,7 @@ class Layout
     @diffeq = @tokens.to_hash
   end
 
-  def layout(output=0)
-    output = output.to_i
-
+  def connect
     nodes, int, fan, mult = [], 1, 1, 1
     arr = (0..(@diffeq[:lhs]-1)).to_a.reverse
 
@@ -462,8 +460,6 @@ class Layout
           mult += 1
         end
       end
-
-      node[:out] = true if order == output
       node[:order] = order
 
       nodes << node
@@ -473,9 +469,9 @@ class Layout
   end
 
   def self.script(input, quiet=false, *args)
-    lo = Layout.new(input, quiet)
-    p lo.instance_eval {@diffeq}
-    p lo.layout(*args)
+    conn = Connections.new(input, quiet)
+    p conn.instance_eval {@diffeq}
+    p conn.connect(*args)
   end
 end
 
@@ -492,4 +488,4 @@ end
 
 
 #script(Tokens, true)
-script(Layout, true, *ARGV)
+script(Connections, true, *ARGV)
