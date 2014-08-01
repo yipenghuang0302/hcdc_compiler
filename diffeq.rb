@@ -477,10 +477,10 @@ class Connections
     }
   end
 
-  def self.script(input, quiet=false, *args)
+  def self.script(input, quiet=false)
     conn = Connections.new(input, quiet)
     p conn.instance_eval {@diffeq}
-    p conn.connect(*args)
+    p conn.connect
   end
 end
 
@@ -497,4 +497,4 @@ end
 
 
 #script(Tokens, true)
-script(Connections, true, *ARGV)
+script(Connections, true)
