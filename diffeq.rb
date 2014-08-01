@@ -443,29 +443,38 @@ class Connections
   end
 
   def connect
-    nodes, int, fan, mult = [], 1, 1, 1
-    arr = (0..(@diffeq[:lhs]-1)).to_a.reverse
+    result = @diffeq[:lhs][:orders][0]
 
-    arr.each_with_index {|order, i|
-      node = { :int => int }
-      int += 1
+    arr = (0..result).to_a.reverse
 
-      # If order is defined in @diffeq then we need to copy it and send it back
-      if @diffeq.include?(order) && order > 0 then
-        node[:fan] = fan
-        fan += 1
-        unless @diffeq[order].to_f == 1.0 then
-          node[:mult] = mult
-          node[:coef] = @diffeq[order].to_f
-          mult += 1
-        end
-      end
-      node[:order] = order
-
-      nodes << node
+    adjlist = arr.inject(Hash.new) {|h, order|
+      h[[order]] = Hash.new
+      h[[order]][[order - 1]] = 1 unless order == 0
+      h
     }
 
-    nodes
+    keys = @diffeq[:hash].keys.sort_by {|xs, *order| order.length}
+
+    keys.each {|key|
+      xs, *order = *key
+      order.each {|factor|
+        error("Somehow key #{key.inspect} was found twice. x's allowed?", -1) if adjlist[[factor]].include?(order)
+        adjlist[[factor]][order] = 1
+      } unless order.length == 1
+    }
+
+    keys.each {|key|
+      xs, *order = *key
+      adjlist[order] ||= Hash.new
+      error("Somehow edge from #{order} to #{result} exists already. x's allowed?", -1) if adjlist[order].include?([result])
+      adjlist[order][[result]] = @diffeq[:hash][key]
+    }
+
+    adjlist = {
+      :constant => @diffeq[:constant],
+      :result => result,
+      :adjlist => adjlist
+    }
   end
 
   def self.script(input, quiet=false, *args)
