@@ -458,7 +458,6 @@ class Connections
     keys.each {|key|
       xs, *order = *key
       order.each {|factor|
-        error("Somehow key #{key.inspect} was found twice. x's allowed?", -1) if adjlist[[factor]].include?(order)
         adjlist[[factor]][order] = 1
       } unless order.length == 1
     }
