@@ -449,7 +449,7 @@ class Connections
 
     adjlist = arr.inject(Hash.new) {|h, order|
       h[[order]] = Hash.new
-      h[[order]][[order - 1]] = 1 unless order == 0
+      h[[order]][[order - 1]] = [1] unless order == 0
       h
     }
 
@@ -459,15 +459,14 @@ class Connections
       keys.each {|key|
         xs, *order = *key
         order.each {|factor|
-          adjlist[[factor]][order] = 1
+          (adjlist[[factor]][order] ||= []) << 1
         } unless order.length == 1
       }
 
       keys.each {|key|
         xs, *order = *key
-        adjlist[order] ||= Hash.new
-        error("Somehow edge from #{order} to #{result} exists already. x's allowed?", -1) if adjlist[order].include?([result])
-        adjlist[order][[result]] = @diffeq[:hash][key]
+        error("Somehow order #{order} already exists in graph?", -1) if adjlist.include?(order)
+        adjlist[order] = { [result] => [@diffeq[:hash][key]] }
       }
     end
 
