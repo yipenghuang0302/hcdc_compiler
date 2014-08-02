@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'set'
+
 class Integer
   def partition
     return if self < 0
@@ -8,10 +10,15 @@ class Integer
       return
     end
       
-
+    saw = Set.new
     (1..self).each {|i|
       (self-i).partition {|split|
         split.unshift(i)
+        split.sort!
+
+        next if saw.include?(split)
+        saw << split
+
         yield(split)
       }
     }
