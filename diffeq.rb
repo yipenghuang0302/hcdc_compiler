@@ -406,7 +406,7 @@ class Tokens
     result[:hash] = result[:terms].inject(Hash.new) {|h, term|
       key = [term[:xs], *term[:orders]]
       h.update(key => term[:coef])
-    }
+    } unless result[:terms].nil?
 
     result
   end
@@ -453,21 +453,23 @@ class Connections
       h
     }
 
-    keys = @diffeq[:hash].keys.sort_by {|xs, *order| order.length}
+    if @diffeq.include?(:hash) then
+      keys = @diffeq[:hash].keys.sort_by {|xs, *order| order.length}
 
-    keys.each {|key|
-      xs, *order = *key
-      order.each {|factor|
-        adjlist[[factor]][order] = 1
-      } unless order.length == 1
-    }
+      keys.each {|key|
+        xs, *order = *key
+        order.each {|factor|
+          adjlist[[factor]][order] = 1
+        } unless order.length == 1
+      }
 
-    keys.each {|key|
-      xs, *order = *key
-      adjlist[order] ||= Hash.new
-      error("Somehow edge from #{order} to #{result} exists already. x's allowed?", -1) if adjlist[order].include?([result])
-      adjlist[order][[result]] = @diffeq[:hash][key]
-    }
+      keys.each {|key|
+        xs, *order = *key
+        adjlist[order] ||= Hash.new
+        error("Somehow edge from #{order} to #{result} exists already. x's allowed?", -1) if adjlist[order].include?([result])
+        adjlist[order][[result]] = @diffeq[:hash][key]
+      }
+    end
 
     adjlist = {
       :constant => @diffeq[:constant],
