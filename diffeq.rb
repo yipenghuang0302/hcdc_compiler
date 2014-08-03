@@ -465,8 +465,9 @@ class Connections
 
       keys.each {|key|
         xs, *order = *key
-        error("Somehow order #{order} already exists in graph?", -1) if adjlist.include?(order)
-        adjlist[order] = { [result] => [@diffeq[:hash][key]] }
+        error("Somehow order #{order} already exists in graph?", -1) if order.length != 1 && adjlist.include?(order)
+        adjlist[order] ||= Hash.new
+        adjlist[order][result] = [@diffeq[:hash][key]]
       }
     end
 
