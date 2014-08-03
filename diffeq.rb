@@ -496,5 +496,7 @@ def script(klass, *args, &block)
 end
 
 
-#script(Tokens, true)
-script(Connections, true)
+if __FILE__ == $0 then
+  #script(Tokens, true)
+  script(Connections, true)
+end
