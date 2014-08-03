@@ -40,6 +40,16 @@ class Integer
   end
 end
 
+class String
+  def order
+    return self.scan(/'+/).map {|i| i.length}.max || 0
+  end
+
+  def incOrder
+    return self.gsub(/y/, "y'")
+  end
+end
+
 class Array
   def increment(sizes)
     self[-1] += 1
@@ -72,10 +82,17 @@ class Array
   end
 end
 
+def runDiffeq(diffeq)
+  term = 'y' + ("'" * (diffeq.order + 1))
+  puts "#{term} = #{diffeq}"
+end
+
+
 arg = ARGV[0].to_i
 
 arg.partition {|arr|
   arr.diffeqs {|diffeq|
-    p diffeq
+    runDiffeq(diffeq)
   }
 }
+
