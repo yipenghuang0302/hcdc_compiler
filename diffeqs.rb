@@ -84,15 +84,21 @@ end
 
 def runDiffeq(diffeq)
   term = 'y' + ("'" * (diffeq.order + 1))
-  puts "#{term} = #{diffeq}"
+  eq = "#{term} = #{diffeq}"
+  $stdout.puts ">>> #{eq} <<<"
+  $stdout.puts `echo "#{eq}" | ./diffeq.rb`
+  $stderr.puts "Error on #{eq}" if $?.to_i != 0
 end
 
+args = ARGV.map {|i| i.to_i}
 
-arg = ARGV[0].to_i
-
-arg.partition {|arr|
-  arr.diffeqs {|diffeq|
-    runDiffeq(diffeq)
+args.each {|arg|
+  $stdout.puts
+  $stdout.puts ">>> !! arg = #{arg} !! <<<"
+  $stderr.puts "Checking arg #{arg}"
+  arg.partition {|arr|
+    arr.diffeqs {|diffeq|
+      runDiffeq(diffeq)
+    }
   }
 }
-
