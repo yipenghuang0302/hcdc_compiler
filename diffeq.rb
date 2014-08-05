@@ -467,7 +467,7 @@ class Connections
         xs, *order = *key
         error("Somehow order #{order} already exists in graph?", -1) if order.length != 1 && adjlist.include?(order)
         adjlist[order] ||= Hash.new
-        adjlist[order][result] = [@diffeq[:hash][key]]
+        adjlist[order][[result]] = [@diffeq[:hash][key]]
       }
     end
 
