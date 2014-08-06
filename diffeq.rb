@@ -291,7 +291,7 @@ class Array
 
   def normalize
     return self if self.any? {|sym, coef, (x, xs), (d, *orders)| xs > 0}
-    lowest = self.map {|sym, coef, (x, xs), (d, *orders)| orders.min || 0}.min || 0
+    lowest = self.map {|sym, coef, (x, xs), (d, *orders)| orders.min}.compact.min || 0
     self.map {|sym, coef, (x, xs), (d, *orders)|
       [sym, coef, [x, xs], [d, *orders.map {|order| order - lowest}]]
     }
