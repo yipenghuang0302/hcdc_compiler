@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'set'
+require 'open3'
 
 class Integer
   def partition
@@ -45,8 +46,8 @@ class String
     return self.scan(/'+/).map {|i| i.length}.max || 0
   end
 
-  def incOrder
-    return self.gsub(/y/, "y'")
+  def incOrder(amt=1)
+    return amt <= 0 ? self : self.gsub(/y/, (amt+1).to_y)
   end
 end
 
@@ -82,13 +83,45 @@ class Array
   end
 end
 
-def runDiffeq(diffeq)
-  term = 'y' + ("'" * (diffeq.order + 1))
-  eq = "#{term} = #{diffeq}"
-  $stdout.puts ">>> #{eq} <<<"
-  $stdout.puts `echo "#{eq}" | ./diffeq.rb`
-  $stderr.puts "Error on #{eq}" if $?.to_i != 0
+def generateDiffeqs(diffeq)
+  order = diffeq.order
+  termshifts.each {|tshift|
+    term = (order + tshift + 2).to_y
+    constants.each {|const|
+      eqshifts.each {|shift|
+        eq = "#{term} = #{diffeq} + #{const}".incOrder(shift)
+        yield eq
+      }
+    }
+  }
 end
+
+def runDiffeq(diffeq)
+  generateDiffeqs(diffeq) {|eq|
+    $stdout.puts ">>> #{eq} <<<"
+    Open3.popen3("ruby", "diffeq.rb") {|stdin, stdout, stderr, wait_thr|
+      stdin.puts(eq)
+      stdin.close
+      $stdout.puts stdout.readlines
+      exit_status = wait_thr.value
+      $stderr.puts "Error on #{eq}" if exit_status.to_i != 0
+    }
+  }
+end
+
+def constants
+  return [0, 1, 2]
+end
+
+def termshifts
+  return [0, 1, 2]
+end
+
+def eqshifts
+  return [0, 1, 2]
+end
+
+
 
 args = ARGV.map {|i| i.to_i}
 
