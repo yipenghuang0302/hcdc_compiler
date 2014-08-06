@@ -49,6 +49,12 @@ class String
   def incOrder(amt=1)
     return amt <= 0 ? self : self.gsub(/y/, (amt+1).to_y)
   end
+
+  def randomCoefs
+    # Just use some random coefficients between -20 and 20
+    coefs = (-20..20).to_a
+    return self.gsub(/y/) { "#{coefs.sample}y" }
+  end
 end
 
 class Array
@@ -91,6 +97,7 @@ def generateDiffeqs(diffeq)
       eqshifts.each {|shift|
         eq = "#{term} = #{diffeq} + #{const}".incOrder(shift)
         yield eq
+        yield eq.randomCoefs
       }
     }
   }
