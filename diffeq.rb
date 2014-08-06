@@ -432,6 +432,21 @@ class Tokens
   end
 end
 
+class Graph < Hash
+  @@superinspect = false
+  def inspect
+    return super.inspect() if @@superinspect
+    fix = Proc.new {|arr| arr.length == 1 ? arr[0] : arr}
+    result = self.keys.sort.map {|src|
+      self[src].keys.sort.map {|dst|
+        edges = self[src][dst]
+        "(#{fix[src]} ; #{fix[dst]}): #{fix[edges]}"
+      }
+    }.flatten.join(", ")
+    "< #{result} >"
+  end
+end
+
 class Connections
   @tokens, @diffeq = nil
   def initialize(input, quiet=false)
@@ -447,7 +462,7 @@ class Connections
 
     arr = (0..result).to_a.reverse
 
-    adjlist = arr.inject(Hash.new) {|h, order|
+    adjlist = arr.inject(Graph.new) {|h, order|
       h[[order]] = Hash.new
       h[[order]][[order - 1]] = [1] unless order == 0
       h
