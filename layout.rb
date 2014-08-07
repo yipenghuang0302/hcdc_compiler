@@ -22,16 +22,30 @@ class Layout
 
   def layout(conn)
     # Set up integrators -- this is required
-    edges, adj = [], conn[:adjlist]
+    terms, mults, ints = [], [], []
+    adj = conn[:adjlist]
+
     adj.keys.sort.each {|src|
       adj[src].keys.sort.each {|dst|
         adj[src][dst].each {|weight|
-          edges << [ src, dst, weight ]
+          if dst == [conn[:result]] then
+            terms << [ src, weight ]
+          elsif dst.length > 1 then
+            mults << [ src, dst, weight ]
+          elsif dst.length == 1 && src == [dst[0]+1] then
+            error("Cannot have scaled integration", -1) if weight != 1
+            ints << [ src, dst ]
+          else
+            error("Uncategorized edge. #{[src, dst, weight].inspect}", -1)
+          end
         }
       }
     }
 
-    edges
+    # Now all we have to do is factor everything
+    { :terms => terms,
+      :mults => mults,
+      :ints => ints }
   end
 
   def self.script(input, quiet=false)
