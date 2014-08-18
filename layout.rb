@@ -25,14 +25,16 @@ class Array
   end
   
   def factor
-    return self if self.length == 1 && self[0].length <= 2
-    return self unless self.any? {|term| term.length > 2}
-
     single, multiple = self.uniq.partition {|term| term.length == 1}
-    with, without = *multiple.factor_out(multiple.common_factor)
+    return {
+      :single => single,
+      :product => multiple
+    } if multiple.length <= 1 && multiple.all? {|term| term.length == 2}
+    factoring = multiple.common_factor
+    with, without = *multiple.factor_out(factoring)
 
     { :single => single.flatten,
-      :factor => max,
+      :factor => factoring,
       :across => with,
       :other => without }
   end
