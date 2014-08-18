@@ -18,7 +18,7 @@ class Array
   end
 
   def common_factor
-    counts = self.flatten.uniq..inject(Hash.new) {|h, f|
+    counts = self.flatten.uniq.inject(Hash.new) {|h, f|
       h.update(f => self.select {|term| term.include?(f)}.length)
     }
     counts.key(counts.values.max)
