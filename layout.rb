@@ -12,8 +12,8 @@ class Array
   end
 
   def factor_out(item)
-    with, without = self.partition {|term| term.include?(max)}
-    with.map! {|term| term.delete_first(max)}
+    with, without = self.partition {|term| term.include?(item)}
+    with.map! {|term| term.delete_first(item)}
     [with, without].map {|arr| arr.factor}
   end
 
