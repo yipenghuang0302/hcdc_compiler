@@ -58,37 +58,60 @@ class Layout
     Layout.new(4*n, 8*n, 8*n)
   end
 
-  def layout(conn)
-    # Set up integrators -- this is required
-    terms, mults, ints = [], [], []
-    adj = conn[:adjlist]
-
+  def self.edges(adj)
     adj.keys.sort.each {|src|
       adj[src].keys.sort.each {|dst|
         adj[src][dst].each {|weight|
-          if dst == [conn[:result]] then
-            terms << [ src, weight ]
-          elsif dst.length > 1 then
-            mults << [ src, dst, weight ]
-          elsif dst.length == 1 && src == [dst[0]+1] then
-            error("Cannot have scaled integration", -1) if weight != 1
-            ints << [ src, dst ]
-          else
-            error("Uncategorized edge. #{[src, dst, weight].inspect}", -1)
-          end
+          yield(src, dst, weight)
         }
       }
     }
+  end
+
+  def self.prodmap(factors, mapping, *product)
+    [*factors[:single], *(factors[:product] || [])].each {|item|
+      key = (product + [item]).flatten.sort
+      mapping[key] = [item, *product]
+    }
+    if factors.include?(:factor) then
+      prodmap(factors[:across], mapping, factors[:factor], *product)
+      prodmap(factors[:other], mapping, *product)
+    end
+  end
+
+  def self.parseAdjacency(adj, result)
+    terms, mults, ints = [], [], []
+    Layout.edges(adj) {|src, dst, weight|
+      if dst == [result] then
+        terms << [ src, weight ]
+      elsif dst.length > 1 then
+        mults << [ src, dst, weight ]
+      elsif dst.length == 1 && src == [dst[0]+1] then
+        error("Cannot have scaled integration", -1) if weight != 1
+        ints << [ src, dst ]
+      else
+        error("Uncategorized edge. #{[src, dst, weight].inspect}", -1)
+      end
+    }
+    return [terms, mults, ints]
+  end
+
+  def layout(conn)
+    # Set up integrators -- this is required
+    terms, mults, ints = *Layout.parseAdjacency(conn[:adjlist], conn[:result])
     mults.uniq!
 
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
+    prods = Hash.new
+    Layout.prodmap(factors, prods)
 
     # Now all we have to do is factor everything
-    { :terms => terms,
-      :mults => mults,
-      :ints => ints,
-      :factors => factors }
+    { :terms => terms,      # Terms that get added to the result
+      :mults => mults,      # Anything that has things multipied together: [src, dst, weight]1
+      :ints => ints,        # Integrations
+      :factors => factors,  # Factor hashses (see #factor above)
+      :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
   def self.script(input, quiet=false)
