@@ -3,6 +3,15 @@
 require './diffeq'
 require 'pp'
 
+# Change keys so that if we give it args, it finds keys with those args
+class Hash
+  alias_method :old_keys, :keys
+  def keys(*args)
+    return self.old_keys if args.empty?
+    self.keys.select {|k| args.include?(self[k])}
+  end
+end
+
 class Array
   def delete_first(obj)
     result = self.map {|i| i}
@@ -21,7 +30,7 @@ class Array
     counts = self.flatten.uniq.inject(Hash.new) {|h, f|
       h.update(f => self.select {|term| term.include?(f)}.length)
     }
-    counts.key(counts.values.max)
+    counts.keys(counts.values.max).max
   end
   
   def factor
