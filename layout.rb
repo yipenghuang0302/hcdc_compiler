@@ -43,6 +43,29 @@ class Array
   end
 end
 
+class Integer
+  def to_y
+    (self < 0) ? '' : ('y' + ("'" * self))
+  end
+end
+
+class Hash
+  def factoring
+    singles = self[:single].map {|i| i.to_y}
+    if self.include?(:product) then
+      doubles = (self[:product] || []).map {|prod| prod.map {|i| i.to_y}.join("")}
+      [singles, doubles].flatten.join(" + ")
+    else
+      factor = (self.include?(:factor) ? self[:factor].to_y : "")
+      with, without = *[:across, :other].map {|sym| self[sym].factoring}
+      with = "%s(%s)" % [factor, with]
+      without = nil if without.empty?
+
+      [singles, with, without].compact.flatten.join(" + ")
+    end
+  end
+end
+
 class Layout
   # ints: # of integrators
   # muls: # of multipliers
