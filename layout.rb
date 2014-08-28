@@ -26,14 +26,17 @@ class Array
   
   def factor
     single, multiple = self.uniq.partition {|term| term.length == 1}
+    single = single.flatten
+
     return {
       :single => single,
       :product => multiple
     } if multiple.length <= 1 && multiple.all? {|term| term.length == 2}
+
     factoring = multiple.common_factor
     with, without = *multiple.factor_out(factoring)
 
-    { :single => single.flatten,
+    { :single => single,
       :factor => factoring,
       :across => with,
       :other => without }
