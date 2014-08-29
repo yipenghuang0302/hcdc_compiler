@@ -103,10 +103,10 @@ def generateDiffeqs(diffeq)
   }
 end
 
-def runDiffeq(diffeq)
+def runDiffeq(diffeq, script)
   generateDiffeqs(diffeq) {|eq|
     $stdout.puts ">>> #{eq} <<<"
-    Open3.popen3("ruby", "diffeq.rb") {|stdin, stdout, stderr, wait_thr|
+    Open3.popen3("ruby", script) {|stdin, stdout, stderr, wait_thr|
       stdin.puts(eq)
       stdin.close
       $stdout.puts stdout.readlines
@@ -130,15 +130,28 @@ end
 
 
 
-args = ARGV.map {|i| i.to_i}
-
-args.each {|arg|
+script = "diffeq.rb"
+ARGV.map {|arg|
+  case arg
+    when "-d"
+      script = "diffeq.rb"
+      nil
+    when "-l"
+      script = "layout.rb"
+      nil
+    when /^\d+$/
+      arg.to_i
+    else
+      $stderr.puts "Error in arguments for tester!"
+      exit(1)
+  end
+}.compact.each {|arg|
   $stdout.puts
   $stdout.puts ">>> !! arg = #{arg} !! <<<"
   $stderr.puts "Checking arg #{arg}"
   arg.partition {|arr|
     arr.diffeqs {|diffeq|
-      runDiffeq(diffeq)
+      runDiffeq(diffeq, script)
     }
   }
 }
