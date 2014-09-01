@@ -105,7 +105,7 @@ class Layout
 
   def self.prodmap(factors, mapping, *product)
     [*factors[:single], *(factors[:product] || [])].each {|item|
-      key = (product + [item]).flatten.sort
+      key = (product + [item]).flatten.sort.reverse
       mapping[key] = [item, *product]
     }
     if factors.include?(:factor) then
