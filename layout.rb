@@ -34,21 +34,14 @@ class Array
 
   def factor
     single, multiple = self.uniq.partition {|term| term.length == 1}
-    single.flatten!
-    counts = multiple.term_counts
+    result, counts = { :single => single.flatten }, multiple.term_counts
 
-    return {
-      :single => single,
-      :product => multiple
-    } if (counts.values.max || 0) <= 1
+    return result.update(:product => multiple) if (counts.values.max || 0) <= 1
 
     factoring = counts.keys(counts.values.max).max
     with, without = *multiple.factor_out(factoring)
 
-    { :single => single,
-      :factor => factoring,
-      :across => with,
-      :other => without }
+    result.update(:factor => factoring, :across => with, :other => without)
   end
 end
 
