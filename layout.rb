@@ -154,7 +154,9 @@ class Layout
     p conn.instance_eval {@diffeq}
     results = conn.connect
     p results
-    pp Layout.new.layout(results)
+    layout = Layout.new.layout(results)
+    p layout[:factors].factoring
+    pp layout
   end
 end
 
