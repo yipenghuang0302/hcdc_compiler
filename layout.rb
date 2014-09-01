@@ -62,8 +62,8 @@ class Hash
   def factoring
     singles = self[:single].map {|i| i.to_y}
     if self.include?(:product) then
-      doubles = (self[:product] || []).map {|prod| prod.map {|i| i.to_y}.join("")}
-      [singles, doubles].flatten.join(" + ")
+      multiples = (self[:product] || []).map {|prod| prod.map {|i| i.to_y}.join("")}
+      [singles, multiples].flatten.join(" + ")
     else
       factor = (self.include?(:factor) ? self[:factor].to_y : "")
       with, without = *[:across, :other].map {|sym| self[sym].factoring}
