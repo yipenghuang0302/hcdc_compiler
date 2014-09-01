@@ -11,7 +11,7 @@ class Integer
       yield([])
       return
     end
-      
+
     saw = Set.new
     (1..self).each {|i|
       (self-i).partition {|split|
@@ -56,7 +56,7 @@ class String
   end
 
 
-  # Given the string, add random coefs from -20 to 20 to each term  
+  # Given the string, add random coefs from -20 to 20 to each term
   def randomCoefs
     coefs = (-20..20).to_a
     return self.gsub(/y/) { "#{coefs.sample}y" }
