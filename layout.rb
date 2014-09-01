@@ -26,23 +26,23 @@ class Array
     [with, without].map {|arr| arr.factor}
   end
 
-  def common_factor
-    counts = self.flatten.uniq.inject(Hash.new) {|h, f|
+  def term_counts
+    self.flatten.uniq.inject(Hash.new(0)) {|h, f|
       h.update(f => self.select {|term| term.include?(f)}.length)
     }
-    counts.keys(counts.values.max).max
   end
-  
+
   def factor
     single, multiple = self.uniq.partition {|term| term.length == 1}
-    single = single.flatten
+    single.flatten!
+    counts = multiple.term_counts
 
     return {
       :single => single,
       :product => multiple
-    } if multiple.length <= 1 && multiple.all? {|term| term.length == 2}
+    } if (counts.values.max || 0) <= 1
 
-    factoring = multiple.common_factor
+    factoring = counts.keys(counts.values.max).max
     with, without = *multiple.factor_out(factoring)
 
     { :single => single,
