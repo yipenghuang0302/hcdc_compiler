@@ -86,10 +86,11 @@ class Hash
   end
 
   def nodes(state)
-    return [] if self.dead?
+    single = self[:single].map {|i| {:int => i}}
 
-    return {:add =>
-      self[:single].map {|i| {:int => i}} + self[:product].map {|term|
+    return [] if self.dead?
+    return [{:add =>
+      single + self[:product].map {|term|
         dup, nodes, mul, product = term.map {|e| e}, [], state[:mul][:count], []
 
         update = Proc.new {|node|
@@ -109,10 +110,14 @@ class Hash
         state[:mul][:count] = mul
         nodes
       }.flatten
-    } if self.alive?
+    }] if self.alive?
 
     # Neither dead nor alive; clearly an abomination--but really just an internal node
-    
+    other, with = self[:other].nodes(state), self[:with].nodes(state)
+    factored = {:mul => state[:mul][:count], :left => {:int => self[:factor]}, :right => with, :type => :add}
+    (state[:fans][:int][self[:factor]] ||= []) << state[:mul][:count]
+    state[:mul][:count] += 1
+    [{:add => single + factored + other}]
   end
 end
 
