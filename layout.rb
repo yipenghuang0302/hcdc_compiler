@@ -18,6 +18,10 @@ class Hash
   def dead?
     self.leaf? && self[:single].empty? && self[:product].empty?
   end
+
+  def alive?
+    self.leaf? && !self.dead?
+  end
 end
 
 class Array
@@ -51,6 +55,12 @@ class Array
 
     result.update(:factor => factoring, :across => with, :other => without)
   end
+
+  def insort(item)
+    self << item
+    self.sort!
+    item
+  end
 end
 
 class Integer
@@ -73,6 +83,36 @@ class Hash
 
       [singles, with, without].compact.flatten.join(" + ")
     end
+  end
+
+  def nodes(state)
+    return [] if self.dead?
+
+    return {:add =>
+      self[:single].map {|i| {:int => i}} + self[:product].map {|term|
+        dup, nodes, mul, product = term.map {|e| e}, [], state[:mul][:count], []
+
+        update = Proc.new {|node|
+          old, node = state[:products][product], node.update(:mul => mul, :product => product.map {|e| e})
+          state[:mul][mul] = state[:products][product] = old || node
+          unless old then
+            (state[:fans][:int][node[:left]] ||= []) << mul
+            (state[:fans][node[:type]][node[:right]] ||= []) << mul
+            mul += 1
+          end
+          nodes << node
+        }
+
+        product = [dup.shift, dup.shift].sort
+        update[{:left => product[0], :right => product[1], :type => :int}]
+        update[{:left => {:int => product.insort(dup.shift)}, :right => {:mul => mul-1}, :type => :mul}] until dup.empty?
+        state[:mul][:count] = mul
+        nodes
+      }.flatten
+    } if self.alive?
+
+    # Neither dead nor alive; clearly an abomination--but really just an internal node
+    
   end
 end
 
