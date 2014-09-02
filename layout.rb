@@ -10,6 +10,14 @@ class Hash
     return self.old_keys if args.empty?
     self.keys.select {|k| args.include?(self[k])}
   end
+
+  def leaf?
+    self.include?(:product)
+  end
+
+  def dead?
+    self.leaf? && self[:single].empty? && self[:product].empty?
+  end
 end
 
 class Array
@@ -54,11 +62,11 @@ end
 class Hash
   def factoring
     singles = self[:single].map {|i| i.to_y}
-    if self.include?(:product) then
+    if self.leaf? then
       multiples = (self[:product] || []).map {|prod| prod.map {|i| i.to_y}.join("")}
       [singles, multiples].flatten.join(" + ")
     else
-      factor = (self.include?(:factor) ? self[:factor].to_y : "")
+      factor = self[:factor].to_y # (self.include?(:factor) ? self[:factor].to_y : "")
       with, without = *[:across, :other].map {|sym| self[sym].factoring}
       with = "%s(%s)" % [factor, with]
       without = nil if without.empty?
@@ -101,7 +109,7 @@ class Layout
       key = (product + [item]).flatten.sort.reverse
       mapping[key] = [item, *product]
     }
-    if factors.include?(:factor) then
+    unless factors.leaf? then
       prodmap(factors[:across], mapping, factors[:factor], *product)
       prodmap(factors[:other], mapping, *product)
     end
