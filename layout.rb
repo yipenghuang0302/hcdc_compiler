@@ -69,6 +69,20 @@ class Integer
   end
 end
 
+class Node
+  @@fans = Hash.new
+
+  def self.fans(destination, *sources)
+    sources.each {|src|
+      (@@fans[src] ||= Hash.new(0))[destination] += 1
+    }
+  end
+
+  def self.table
+    @@fans
+  end
+end
+
 class Var
   def self.var(var)
     Hash.node(:var => var)
@@ -103,6 +117,7 @@ class Mul
     @@table[@@count] = record
     @@count += 1
 
+    Node.fans(node, left, right)
     node
   end
 end
@@ -124,6 +139,7 @@ class Add
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
+    Node.fans(node, *terms)
     node
   end
 end
@@ -244,7 +260,8 @@ class Layout
       :state => {
         :mul => Mul.table,
         :add => Add.table,
-        :products => Mul.products
+        :products => Mul.products,
+        :fans => Node.table,
       },
       :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
   end
