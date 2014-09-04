@@ -166,7 +166,7 @@ class Hash
     {:type => k, :ref => v}
   end
 
-  def nodes()
+  def node
     return nil if self.dead?
 
     single = Var.vars(self[:single])
@@ -179,7 +179,7 @@ class Hash
     }
     return Add.add(single, self[:product].map {|term| term_map[term.dup]}) if self.alive?
 
-    other, with, factor = self[:other].nodes, self[:across].nodes, Var.var(self[:factor])
+    other, with, factor = self[:other].node, self[:across].node, Var.var(self[:factor])
     return Add.add(single, Mul.times(factor, with), other)
   end
 end
@@ -248,18 +248,18 @@ class Layout
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
     singles = Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
-    nodes = factors.nodes
+    node = factors.node
     prods = Hash.new
     Layout.prodmap(factors, prods)
 
-    if nodes[:type] == :add then
+    if node[:type] == :add then
       # Since we construct nodes from a maximal factoring, we only have to worry
       # about this kind of thing here--every where else, there won't be adjacent
       # adds and such in the heirarchy, and single vars get added at the base.
-      Add.table[nodes[:ref]][:terms] += singles
-      Node.fans(nodes, *singles)
+      Add.table[node[:ref]][:terms] += singles
+      Node.fans(node, *singles)
     else
-      nodes = Add.create(singles, nodes)
+      node = Add.create(singles, node)
     end
 
     # Now all we have to do is factor everything
@@ -268,7 +268,7 @@ class Layout
       :ints => ints,        # Integrations
       :factors => factors,  # Factor hashses (see #factor above)
       :singles => singles,
-      :nodes => nodes,
+      :node => node,
       :state => {
         :mul => Mul.table,
         :add => Add.table,
