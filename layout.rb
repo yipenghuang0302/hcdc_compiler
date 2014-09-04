@@ -247,15 +247,27 @@ class Layout
 
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
+    singles = Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
     nodes = factors.nodes
     prods = Hash.new
     Layout.prodmap(factors, prods)
+
+    if nodes[:type] == :add then
+      # Since we construct nodes from a maximal factoring, we only have to worry
+      # about this kind of thing here--every where else, there won't be adjacent
+      # adds and such in the heirarchy, and single vars get added at the base.
+      Add.table[nodes[:ref]][:terms] += singles
+      Node.fans(nodes, *singles)
+    else
+      nodes = Add.create(singles, nodes)
+    end
 
     # Now all we have to do is factor everything
     { :terms => terms,      # Terms that get added to the result
       :mults => mults,      # Anything that has things multipied together: [src, dst, weight]1
       :ints => ints,        # Integrations
       :factors => factors,  # Factor hashses (see #factor above)
+      :singles => singles,
       :nodes => nodes,
       :state => {
         :mul => Mul.table,
