@@ -73,7 +73,7 @@ class Node
   @@fans = Hash.new
 
   def self.fans(destination, *sources)
-    sources.each {|src|
+    sources.flatten.each {|src|
       (@@fans[src] ||= Hash.new(0))[destination] += 1
     }
   end
@@ -139,7 +139,7 @@ class Add
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
-    Node.fans(node, *terms)
+    Node.fans(node, terms)
     node
   end
 end
@@ -257,7 +257,7 @@ class Layout
       # about this kind of thing here--every where else, there won't be adjacent
       # adds and such in the heirarchy, and single vars get added at the base.
       Add.table[node[:ref]][:terms] += singles
-      Node.fans(node, *singles)
+      Node.fans(node, singles)
     else
       node = Add.create(singles, node)
     end
