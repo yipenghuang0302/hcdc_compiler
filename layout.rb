@@ -69,15 +69,9 @@ class Integer
   end
 end
 
-class Node < Hash
-  def initialize(type, ref)
-    self[:type], self[:ref] = type, ref
-  end
-end
-
 class Var
   def self.var(var)
-    Node.new(:var, var)
+    Hash.node(:var => var)
   end
 
   def self.vars(*terms)
@@ -100,7 +94,7 @@ class Mul
   def self.times(left, right, product=nil)
     return @@products[product] if !product.nil? && @@products.include?(product)
 
-    node = Node.new(:mul, @@count)
+    node = Hash.node(:mul => @@count)
     record = {:left => left, :right => right}
     if product then
       record.update(:product => product)
@@ -126,7 +120,7 @@ class Add
     terms.compact!
     return terms[0] if terms.length == 1
 
-    node = Node.new(:add, @@count)
+    node = Hash.node(:add => @@count)
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
@@ -148,6 +142,12 @@ class Hash
 
       [singles, with, without].compact.flatten.join(" + ")
     end
+  end
+
+  def self.node(map)
+    raise ArgumentError, "Inappropriate node map!" if map.size != 1
+    k, v = *[map.keys, map.values].flatten
+    {:type => k, :ref => v}
   end
 
   def nodes()
