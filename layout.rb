@@ -69,6 +69,71 @@ class Integer
   end
 end
 
+class Node < Hash
+  def initialize(type, ref)
+    self[:type], self[:ref] = type, ref
+  end
+end
+
+class Var
+  def self.var(var)
+    Node.new(:var, var)
+  end
+
+  def self.vars(*terms)
+    terms.flatten.map {|i| Var.var(i)}
+  end
+end
+
+class Mul
+  @@count = 0
+  @@table = Hash.new
+  @@products = Hash.new
+
+  def self.table
+    @@table
+  end
+  def self.products
+    @@products
+  end
+
+  def self.times(left, right, product=nil)
+    return @@products[product] if !product.nil? && @@products.include?(product)
+
+    node = Node.new(:mul, @@count)
+    record = {:left => left, :right => right}
+    if product then
+      record.update(:product => product)
+      @@products[product] = node
+    end
+    @@table[@@count] = record
+    @@count += 1
+
+    node
+  end
+end
+
+class Add
+  @@count = 0
+  @@table = Hash.new
+
+  def self.table
+    @@table
+  end
+
+  def self.add(*terms)
+    terms.flatten!
+    terms.compact!
+    return terms[0] if terms.length == 1
+
+    node = Node.new(:add, @@count)
+    @@table[@@count] = {:terms => terms}
+    @@count += 1
+
+    node
+  end
+end
+
 class Hash
   def factoring
     singles = self[:single].map {|i| i.to_y}
@@ -85,53 +150,21 @@ class Hash
     end
   end
 
-  def nodes(state)
+  def nodes()
     return nil if self.dead?
 
-    as = Proc.new {|*args|
-      sym, *args = *args
-      proc = Proc.new {|val| {sym => val, :type => sym} }
-      args.empty? ? proc : proc[args[0]]
-    }
-    from_terms = Proc.new {|term|
-      term.select {|key, value| [:type, term[:type]].include?(key)}
-    }
-    appender = Proc.new {|sym, node|
-      count = state[sym][:count]
-      node.update(sym => count, :type => sym)
-      state[sym][count] = node
-      state[sym][:count] += 1
+    single = Var.vars(self[:single])
+    term_map = Proc.new {|term|
+      product = [term.shift, term.shift].sort
+      update = Proc.new {|left, right| Mul.times(left, right, product.dup)}
+      node = update[Var.var(product[0]), Var.var(product[1])]
+      node = update[Var.var(product.insort(term.shift)), node] until term.empty?
       node
     }
+    return Add.add(single, self[:product].map {|term| term_map[term.dup]}) if self.alive?
 
-    single = self[:single].map(&as[:var])
-    if self.alive? then
-      nodes = single.dup + self[:product].map {|term| term.dup}.map {|term|
-        product = []
-        update = Proc.new {|node|
-          if state[:products].include?(product) then
-            node = state[:products][product]
-          else
-            state[:products][product] = appender[:mul, node.update(:product => product.dup)]
-          end
-          node
-        }
-
-        product = [term.shift, term.shift].sort
-        node = update[:left => as[:var, product[0]], :right => as[:var, product[1]]]
-        node = update[:left => as[:var, product.insort(term.shift)], :right => as[:mul, node[:mul]]] until term.empty?
-        node
-      }
-
-      return appender[:add, {:terms => nodes.map(&from_terms)}]
-    end
-
-    other, with = self[:other].nodes(state), self[:across].nodes(state)
-    factored = {:left => as[:var, self[:factor]], :right => as[:add, with[:add]]}
-    appender[:mul, factored]
-
-    nodes = single + [factored] + (other ? [other] : [])
-    return appender[:add, :terms => nodes.map(&from_terms)]
+    other, with, factor = self[:other].nodes, self[:across].nodes, Var.var(self[:factor])
+    return Add.add(single, Mul.times(factor, with), other)
   end
 end
 
@@ -198,13 +231,7 @@ class Layout
 
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
-    state = {
-      :mul => {:count => 0},
-      :add => {:count => 0},
-      :products => {},
-      :fans => {:int => {}, :mul => {}}
-    }
-    nodes = factors.nodes(state)
+    nodes = factors.nodes
     prods = Hash.new
     Layout.prodmap(factors, prods)
 
@@ -214,7 +241,11 @@ class Layout
       :ints => ints,        # Integrations
       :factors => factors,  # Factor hashses (see #factor above)
       :nodes => nodes,
-      :state => state,
+      :state => {
+        :mul => Mul.table,
+        :add => Add.table,
+        :products => Mul.products
+      },
       :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
