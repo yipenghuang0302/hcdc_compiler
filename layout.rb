@@ -206,23 +206,6 @@ class Hash
 end
 
 class Layout
-  # ints: # of integrators
-  # muls: # of multipliers
-  # fans: # of fans
-  # mscale: mul 2 vars, scale by this
-  # fout: how much fanout we have
-  def initialize(ints=4, muls=8, fans=8, mscale=0.5, fout=3)
-    @ints = ints
-    @muls = muls
-    @fans = fans
-    @mscale = mscale
-    @fout = fout
-  end
-
-  def self.many(n)
-    Layout.new(4*n, 8*n, 8*n)
-  end
-
   def self.edges(adj)
     adj.keys.sort.each {|src|
       adj[src].keys.sort.each {|dst|
@@ -261,7 +244,7 @@ class Layout
     return [terms, mults, ints]
   end
 
-  def layout(conn)
+  def self.layout(conn)
     # Set up integrators -- this is required
     terms, mults, ints = *Layout.parseAdjacency(conn[:adjlist], conn[:result])
     mults.uniq!
@@ -295,7 +278,7 @@ class Layout
     p conn.instance_eval {@diffeq}
     results = conn.connect
     p results
-    layout = Layout.new.layout(results)
+    layout = Layout.layout(results)
     p layout[:factors].factoring
     pp layout
   end
