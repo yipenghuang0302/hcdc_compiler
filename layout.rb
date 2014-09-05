@@ -55,12 +55,6 @@ class Array
 
     result.update(:factor => factoring, :across => with, :other => without)
   end
-
-  def insort(item)
-    self << item
-    self.sort!
-    item
-  end
 end
 
 class Integer
@@ -81,6 +75,16 @@ class Node
   def self.table
     @@fans
   end
+
+  def self.key(*nodes)
+    nodes.flatten!
+    key = nodes.inject(:mul => [], :add => [], :var => []) {|h, node|
+      h[node[:type]] << node[:ref]
+      h
+    }
+    key.keys.each {|k| key[k].sort!}
+    key
+  end
 end
 
 class Var
@@ -96,25 +100,22 @@ end
 class Mul
   @@count = 0
   @@table = Hash.new
-  @@products = Hash.new
+  @@factors = Hash.new
 
   def self.table
     @@table
   end
-  def self.products
-    @@products
+  def self.factors
+    @@factors
   end
 
-  def self.times(left, right, product=nil)
-    return @@products[product] if !product.nil? && @@products.include?(product)
+  def self.times(left, right)
+    key = Node.key(left, right)
+    return @@factors[key] if @@factors.include?(key)
 
     node = Hash.node(:mul => @@count)
-    record = {:left => left, :right => right}
-    if product then
-      record.update(:product => product)
-      @@products[product] = node
-    end
-    @@table[@@count] = record
+    @@factors[key] = node
+    @@table[@@count] = {:left => left, :right => right}
     @@count += 1
 
     Node.fans(node, left, right)
@@ -125,9 +126,14 @@ end
 class Add
   @@count = 0
   @@table = Hash.new
+  @@terms = Hash.new
 
   def self.table
     @@table
+  end
+
+  def self.terms
+    @@terms
   end
 
   def self.add(*terms)
@@ -135,11 +141,32 @@ class Add
     terms.compact!
     return terms[0] if terms.length == 1
 
+    key = Node.key(terms)
+    return @@terms[key] if @@terms.include?(key)
+
     node = Hash.node(:add => @@count)
+    @@terms[key] = node
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
     Node.fans(node, terms)
+    node
+  end
+
+  # Dangerous if used on anything but the final node.
+  def self.append(node, *rest)
+    rest.flatten!
+    return node if rest.empty?
+    return Add.add(node, rest) unless node[:type] == :add
+
+    ref = @@table[node[:ref]]
+    old = Node.key(ref[:terms])
+    ref[:terms] += rest
+    new = Node.key(ref[:terms])
+
+    @@terms.delete(old)
+    @@terms[new] = node
+
     node
   end
 end
@@ -170,13 +197,7 @@ class Hash
     return nil if self.dead?
 
     single = Var.vars(self[:single])
-    term_map = Proc.new {|term|
-      product = [term.shift, term.shift].sort
-      update = Proc.new {|left, right| Mul.times(left, right, product.dup)}
-      node = update[Var.var(product[0]), Var.var(product[1])]
-      node = update[Var.var(product.insort(term.shift)), node] until term.empty?
-      node
-    }
+    term_map = Proc.new {|term| Var.vars(term).inject {|a, b| Mul.times(b, a)}}
     return Add.add(single, self[:product].map {|term| term_map[term.dup]}) if self.alive?
 
     other, with, factor = self[:other].node, self[:across].node, Var.var(self[:factor])
@@ -248,19 +269,9 @@ class Layout
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
     singles = Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
-    node = factors.node
+    node = Add.append(factors.node, singles)
     prods = Hash.new
     Layout.prodmap(factors, prods)
-
-    if node[:type] == :add then
-      # Since we construct nodes from a maximal factoring, we only have to worry
-      # about this kind of thing here--every where else, there won't be adjacent
-      # adds and such in the heirarchy, and single vars get added at the base.
-      Add.table[node[:ref]][:terms] += singles
-      Node.fans(node, singles)
-    else
-      node = Add.create(singles, node)
-    end
 
     # Now all we have to do is factor everything
     { :terms => terms,      # Terms that get added to the result
@@ -271,8 +282,9 @@ class Layout
       :node => node,
       :state => {
         :mul => Mul.table,
+        :factors => Mul.factors,
         :add => Add.table,
-        :products => Mul.products,
+        :terms => Add.terms,
         :fans => Node.table,
       },
       :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
