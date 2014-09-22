@@ -1,33 +1,6 @@
 #!/usr/bin/env ruby
 
-# Error handling
-def error(msg, code, backtrace=false)
-  $stderr.puts("ERROR: #{msg}")
-  $stderr.puts caller if backtrace
-  exit(code)
-end
-
-# Just like array
-class Hash
-  def compact
-    self.delete_if {|k, v| v.nil?}
-  end
-end
-
-# Some helper methods to make code a bit nicer
-class Array
-  def sum(init=0)
-    self.inject(init) {|sum, obj| sum + (block_given? ? yield(obj) : obj)}
-  end
-
-  def product(init=1)
-    self.inject(init) {|prod, obj| prod * (block_given? ? yield(obj) : obj)}
-  end
-
-  def dup
-    self.map {|i| i}
-  end
-end
+require './base'
 
 # Some basic methods for the general work flow
 # We represent a parsing as an array:
@@ -159,16 +132,6 @@ class String
           error("Cannot handle character `#{c}' (#{c[0]})", -1)
       end
     }.compact
-  end
-end
-
-class Numeric
-  def niceDiv(divisor)
-    if self.is_a?(Integer) && divisor.is_a?(Integer) && self % divisor == 0 then
-      self / divisor
-    else
-      self / divisor.to_f
-    end
   end
 end
 
@@ -432,21 +395,6 @@ class Tokens
   end
 end
 
-class Graph < Hash
-  @@superinspect = false
-  def inspect
-    return super.inspect() if @@superinspect
-    fix = Proc.new {|arr| arr.length == 1 ? arr[0] : arr}
-    result = self.keys.sort.map {|src|
-      self[src].keys.sort.map {|dst|
-        edges = self[src][dst]
-        "(#{fix[src]} ; #{fix[dst]}): #{fix[edges]}"
-      }
-    }.flatten.join(", ")
-    "< #{result} >"
-  end
-end
-
 class Connections
   @tokens, @diffeq = nil
   def initialize(input, quiet=false)
@@ -499,18 +447,6 @@ class Connections
     p conn.connect
   end
 end
-
-def readDiffEq
-  $stdout.print("Please enter a differential equation to compile: ") if $stdin.tty?
-  diffeq = $stdin.gets.chomp.strip
-  error("Empty differential equation; terminating.", -1) if diffeq =~ /^\s*$/
-  diffeq
-end
-
-def script(klass, *args, &block)
-  klass.script(readDiffEq, *args, &block)
-end
-
 
 if __FILE__ == $0 then
   #script(Tokens, true)

@@ -1,16 +1,11 @@
 #!/usr/bin/env ruby
 
+require './base'
 require './diffeq'
 require 'pp'
 
 # Change keys so that if we give it args, it finds keys with those args
 class Hash
-  alias_method :old_keys, :keys
-  def keys(*args)
-    return self.old_keys if args.empty?
-    self.keys.select {|k| args.include?(self[k])}
-  end
-
   def leaf?
     self.include?(:product)
   end
@@ -25,13 +20,6 @@ class Hash
 end
 
 class Array
-  def delete_first(obj)
-    result = self.map {|i| i}
-    idx = result.find_index(obj)
-    result.delete_at(idx) unless idx.nil?
-    result
-  end
-
   def factor_out(item)
     with, without = self.partition {|term| term.include?(item)}
     with.map! {|term| term.delete_first(item)}
@@ -54,12 +42,6 @@ class Array
     with, without = *multiple.factor_out(factoring)
 
     result.update(:factor => factoring, :across => with, :other => without)
-  end
-end
-
-class Integer
-  def to_y
-    (self < 0) ? '' : ('y' + ("'" * self))
   end
 end
 
