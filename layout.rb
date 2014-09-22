@@ -3,7 +3,6 @@
 require './base'
 require './diffeq'
 require 'pp'
-require 'set'
 
 # Change keys so that if we give it args, it finds keys with those args
 class Hash
@@ -51,13 +50,17 @@ class Node
 
   def self.fans(destination, *sources)
     sources.flatten.each {|src|
-      (@@fans[src] ||= Set.new).add(destination)
+      (@@fans[src] ||= Hash.new(0))[destination] += 1 # Numeric--consider squaring
     }
   end
 
   def self.table
     @@fans.keys.inject(Hash.new) {|h, src|
-      dsts = @@fans[src].to_a
+      dsts = @@fans[src].keys.inject([]) {|arr, dst|
+        count = @@fans[src][dst]
+        count.times { arr << dst }
+        arr
+      }
       h[src] = dsts if src[:type] == :var || dsts.length > 1
       h
     }
