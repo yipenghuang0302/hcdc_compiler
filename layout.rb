@@ -244,10 +244,11 @@ class Layout
     Layout.prodmap(factors, prods)
 
     # Now all we have to do is factor everything
-    { :terms => terms,      # Terms that get added to the result
-      :mults => mults,      # Anything that has things multipied together: [src, dst, weight]1
-      :ints => ints,        # Integrations
-      :factors => factors,  # Factor hashses (see #factor above)
+    { :terms => terms,           # Terms that get added to the result
+      :result => conn[:result],  # Max order needed...
+      :mults => mults,           # Anything that has things multipied together: [src, dst, weight]1
+      :ints => ints,             # Integrations
+      :factors => factors,       # Factor hashses (see #factor above)
       :singles => singles,
       :node => node,
       :state => {
