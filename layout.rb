@@ -46,23 +46,22 @@ class Array
 end
 
 class Node
-  @@fans = Hash.new
+  @@outputs = Hash.new
 
-  def self.fans(destination, *sources)
+  def self.outputs(destination, *sources)
     sources.flatten.each {|src|
-      (@@fans[src] ||= Hash.new(0))[destination] += 1 # Numeric--consider squaring
+      (@@outputs[src] ||= Hash.new(0))[destination] += 1 # Numeric--consider squaring
     }
   end
 
   def self.table
-    @@fans.keys.inject(Hash.new) {|h, src|
-      dsts = @@fans[src].keys.inject([]) {|arr, dst|
-        count = @@fans[src][dst]
+    @@outputs.keys.inject(Hash.new) {|h, src|
+      dsts = @@outputs[src].keys.inject([]) {|arr, dst|
+        count = @@outputs[src][dst]
         count.times { arr << dst }
         arr
       }
-      h[src] = dsts if src[:type] == :var || dsts.length > 1
-      h
+      h.update(src => dsts)
     }
   end
 
@@ -108,7 +107,7 @@ class Mul
     @@table[@@count] = {:left => left, :right => right}
     @@count += 1
 
-    Node.fans(node, left, right)
+    Node.outputs(node, left, right)
     node
   end
 end
@@ -139,7 +138,7 @@ class Add
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
-    Node.fans(node, terms)
+    Node.outputs(node, terms)
     node
   end
 
@@ -259,7 +258,7 @@ class Layout
         :factors => Mul.factors,
         :add => Add.table,
         :terms => Add.terms,
-        :fans => Node.table,
+        :outputs => Node.table,
       },
       :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
   end
