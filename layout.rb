@@ -56,7 +56,11 @@ class Node
   end
 
   def self.table
-    @@fans.keys.inject(Hash.new) {|h, src| h.update(src => @@fans[src].to_a)}
+    @@fans.keys.inject(Hash.new) {|h, src|
+      dsts = @@fans[src].to_a
+      h[src] = dsts if src[:type] == :var || dsts.length > 1
+      h
+    }
   end
 
   def self.key(*nodes)
