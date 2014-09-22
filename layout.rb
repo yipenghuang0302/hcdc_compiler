@@ -3,6 +3,7 @@
 require './base'
 require './diffeq'
 require 'pp'
+require 'set'
 
 # Change keys so that if we give it args, it finds keys with those args
 class Hash
@@ -50,12 +51,12 @@ class Node
 
   def self.fans(destination, *sources)
     sources.flatten.each {|src|
-      (@@fans[src] ||= Hash.new(0))[destination] += 1
+      (@@fans[src] ||= Set.new).add(destination)
     }
   end
 
   def self.table
-    @@fans
+    @@fans.keys.inject(Hash.new) {|h, src| h.update(src => @@fans[src].to_a)}
   end
 
   def self.key(*nodes)
