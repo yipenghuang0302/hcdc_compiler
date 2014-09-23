@@ -51,7 +51,7 @@ class Node
 
   def self.outputs(destination, *sources)
     sources.flatten.each {|src|
-      (@@outputs[src] ||= Hash.new(0))[destination] += 1 # Numeric--consider squaring
+      (@@outputs[src.dup] ||= Hash.new(0))[destination.dup] += 1 # Numeric--consider squaring
     }
   end
 
@@ -101,10 +101,10 @@ class Mul
 
   def self.times(left, right)
     key = Node.key(left, right)
-    return @@factors[key] if @@factors.include?(key)
+    return @@factors[key].dup if @@factors.include?(key)
 
     node = Hash.node(:mul => @@count)
-    @@factors[key] = node
+    @@factors[key.dup] = node
     @@table[@@count] = {:left => left, :right => right}
     @@count += 1
 
@@ -132,10 +132,10 @@ class Add
     return terms[0] if terms.length == 1
 
     key = Node.key(terms)
-    return @@terms[key] if @@terms.include?(key)
+    return @@terms[key].dup if @@terms.include?(key)
 
     node = Hash.node(:add => @@count)
-    @@terms[key] = node
+    @@terms[key.dup] = node
     @@table[@@count] = {:terms => terms}
     @@count += 1
 
@@ -146,6 +146,7 @@ class Add
   # Dangerous if used on anything but the final node.
   def self.append(node, *rest)
     rest.flatten!
+    node = node.dup
     return node if rest.empty?
     return Add.add(node, rest) unless node[:type] == :add
 
