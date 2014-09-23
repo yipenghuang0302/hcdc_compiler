@@ -146,6 +146,7 @@ class Add
   # Dangerous if used on anything but the final node.
   def self.append(node, *rest)
     rest.flatten!
+    return Add.add(*rest) if node.nil?
     node = node.dup
     return node if rest.empty?
     return Add.add(node, rest) unless node[:type] == :add
