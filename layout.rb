@@ -262,14 +262,16 @@ class Layout
   end
 
   def self.script(input, quiet=false, readout)
-    conn = Connections.new(input, quiet)
-    p conn.instance_eval {@diffeq}
-    results = conn.connect
-    p results
-    layout = Layout.layout(results, readout)
+    layout = Layout.layout(Connections.script(input, quiet), readout)
     error("Cannot read out #{readout} order variable from #{layout[:result]} order equation", -1) if readout > layout[:result]
-    p layout[:factors].factoring
+    puts "<layout-factoring>"
+    pp layout[:factors].factoring
+    puts "</layout-factoring>"
+    puts "<layout-layout>"
     pp layout
+    puts "</layout-layout>"
+
+    return layout
   end
 end
 

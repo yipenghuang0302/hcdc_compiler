@@ -50,14 +50,12 @@ class Fanout
   end
 
   def self.script(input, quiet=false, readout)
-    conn = Connections.new(input, quiet)
-    p conn.instance_eval {@diffeq}
-    results = conn.connect
-    p results
-    layout = Layout.layout(results, readout)
-    pp layout
-    fanout = Fanout.calculateFanout(layout)
+    fanout = Fanout.calculateFanout(Layout.script(input, quiet, readout))
+    puts "<fanout>"
     pp fanout
+    puts "</fanout>"
+
+    return fanout
   end
 end
 

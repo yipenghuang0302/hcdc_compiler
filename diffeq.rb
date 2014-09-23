@@ -443,8 +443,13 @@ class Connections
 
   def self.script(input, quiet=false)
     conn = Connections.new(input, quiet)
-    p conn.instance_eval {@diffeq}
-    p conn.connect
+    puts "differential equation is: #{conn.instance_eval {@diffeq}.inspect}"
+    adjlist = conn.connect
+    puts "<connection-adjlist>"
+    pp adjlist
+    puts "</connection-adjlist>"
+
+    return adjlist
   end
 end
 
