@@ -45,6 +45,7 @@ class Array
   end
 end
 
+module LayoutGraph
 class Node
   @@outputs = Hash.new
 
@@ -159,6 +160,7 @@ class Add
     node
   end
 end
+end
 
 class Hash
   def factoring
@@ -185,12 +187,12 @@ class Hash
   def node
     return nil if self.dead?
 
-    single = Var.vars(self[:single])
-    term_map = Proc.new {|term| Var.vars(term).inject {|a, b| Mul.times(b, a)}}
-    return Add.add(single, self[:product].map {|term| term_map[term.dup]}) if self.alive?
+    single = LayoutGraph::Var.vars(self[:single])
+    term_map = Proc.new {|term| LayoutGraph::Var.vars(term).inject {|a, b| LayoutGraph::Mul.times(b, a)}}
+    return LayoutGraph::Add.add(single, self[:product].map {|term| term_map[term.dup]}) if self.alive?
 
-    other, with, factor = self[:other].node, self[:across].node, Var.var(self[:factor])
-    return Add.add(single, Mul.times(factor, with), other)
+    other, with, factor = self[:other].node, self[:across].node, LayoutGraph::Var.var(self[:factor])
+    return LayoutGraph::Add.add(single, LayoutGraph::Mul.times(factor, with), other)
   end
 end
 
@@ -240,8 +242,8 @@ class Layout
 
     # These are all the y orders that come together and get multiplied
     factors = mults.map {|src, dst, weight| dst}.factor
-    singles = Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
-    node = Add.append(factors.node, singles)
+    singles = LayoutGraph::Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
+    node = LayoutGraph::Add.append(factors.node, singles)
     prods = Hash.new
     Layout.prodmap(factors, prods)
 
@@ -254,11 +256,11 @@ class Layout
       :singles => singles,
       :node => node,
       :state => {
-        :mul => Mul.table,
-        :factors => Mul.factors,
-        :add => Add.table,
-        :terms => Add.terms,
-        :outputs => Node.table,
+        :mul => LayoutGraph::Mul.table,
+        :factors => LayoutGraph::Mul.factors,
+        :add => LayoutGraph::Add.table,
+        :terms => LayoutGraph::Add.terms,
+        :outputs => LayoutGraph::Node.table,
       },
       :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
   end
