@@ -15,7 +15,7 @@ class Fanout
 
   def self.calculateFans(layout)
     fanid, fanning2id, id2fanning = 0, {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
-    Fanout.findFans(layout).keys.each {|fanning|
+    Fanout.findFans(layout).keys.sort_by {|fanning| [fanning[:type].to_s, fanning[:ref]]}.each {|fanning|
       id2fanning.update(fanid => fanning)
       fanning2id[fanning[:type]][fanning[:ref]] = fanid
       fanid += 1
