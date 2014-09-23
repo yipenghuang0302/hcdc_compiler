@@ -37,7 +37,7 @@ class Fanout
       fanref = {:type => :fan, :ref => fan}
 
       layout[:state][:outputs][fanref] = result
-      layout[:state][:outputs][fanning] = fanref
+      layout[:state][:outputs][fanning] = [fanref]
     }
 
     layout[:state][:mul].values.each {|mul|
