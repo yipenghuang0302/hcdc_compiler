@@ -85,7 +85,7 @@ end
 class Graph < Hash
   @@superinspect = false
   def inspect
-    return super.inspect() if @@superinspect
+    return super.inspect if @@superinspect
     fix = Proc.new {|arr| arr.length == 1 ? arr[0] : arr}
     result = self.keys.sort.map {|src|
       self[src].keys.sort.map {|dst|
