@@ -129,7 +129,7 @@ class Add
   def self.add(*terms)
     terms.flatten!
     terms.compact!
-    return terms[0] if terms.length == 1
+    return terms[0].dup if terms.length == 1
 
     key = Node.key(terms)
     return @@terms[key].dup if @@terms.include?(key)
