@@ -7,7 +7,7 @@ class Fanout
     output = layout[:state][:outputs]
 
     output.keys.select {|key|
-      key[:type] == :var || output[key].length > 1
+      (key[:type] == :var && key[:ref] > 0) || output[key].length > 1
     }.inject(Hash.new) {|h, key|
       h.update(key => output[key])
     }
