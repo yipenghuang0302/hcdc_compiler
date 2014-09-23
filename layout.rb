@@ -225,7 +225,7 @@ class Layout
     return [terms, mults, ints]
   end
 
-  def self.layout(conn)
+  def self.layout(conn, readout)
     # Set up integrators -- this is required
     terms, mults, ints = *Layout.parseAdjacency(conn[:adjlist], conn[:result])
     mults.uniq!
@@ -234,6 +234,7 @@ class Layout
     factors = mults.map {|src, dst, weight| dst}.factor
     singles = LayoutGraph::Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
     node = LayoutGraph::Add.append(factors.node, singles)
+    LayoutGraph::Node.outputs({:type => :output, :ref => 0}, {:type => :var, :ref => readout})
 
 
     # Now all we have to do is factor everything
@@ -254,15 +255,16 @@ class Layout
     }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
-  def self.script(input, quiet=false)
+  def self.script(input, quiet=false, readout)
     conn = Connections.new(input, quiet)
     p conn.instance_eval {@diffeq}
     results = conn.connect
     p results
-    layout = Layout.layout(results)
+    layout = Layout.layout(results, readout)
+    error("Cannot read out #{readout} order variable from #{layout[:result]} order equation", -1) if readout > layout[:result]
     p layout[:factors].factoring
     pp layout
   end
 end
 
-script(Layout, true) if __FILE__ == $0
+script(Layout, true, ARGV.shift.to_i) if __FILE__ == $0
