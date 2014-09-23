@@ -3,19 +3,11 @@ require './base'
 require './layout'
 
 class Fanout
-  def self.findFans(layout)
-    output = layout[:state][:outputs]
-
-    output.keys.select {|key|
-      (key[:type] == :var && key[:ref] > 0) || output[key].length > 1
-    }.inject(Hash.new) {|h, key|
-      h.update(key => output[key])
-    }
-  end
-
   def self.calculateFans(layout)
-    fanid, fanning2id, id2fanning = 0, {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
-    Fanout.findFans(layout).keys.sort_by {|fanning| [fanning[:type].to_s, fanning[:ref]]}.each {|fanning|
+    fanid, fans = 0, layout[:state][:outputs].select {|key, value| value.length > 1}
+    fanning2id, id2fanning = {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
+
+    fans.keys.sort_by {|fanning| [fanning[:type].to_s, fanning[:ref]]}.each {|fanning|
       id2fanning.update(fanid => fanning)
       fanning2id[fanning[:type]][fanning[:ref]] = fanid
       fanid += 1

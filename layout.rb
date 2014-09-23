@@ -85,6 +85,10 @@ class Var
   def self.vars(*terms)
     terms.flatten.map {|i| Var.var(i)}
   end
+
+  def self.integrators(max)
+    max.downto(1) {|int| Node.outputs(Var.var(int-1), Var.var(int))}
+  end
 end
 
 class Mul
@@ -236,6 +240,7 @@ class Layout
     singles = LayoutGraph::Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
     node = LayoutGraph::Add.append(factors.node, singles)
     LayoutGraph::Node.outputs({:type => :output, :ref => 0}, {:type => :var, :ref => readout})
+    LayoutGraph::Var.integrators(conn[:result] - 1)
 
 
     # Now all we have to do is factor everything
