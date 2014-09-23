@@ -30,7 +30,15 @@ class Fanout
 
   def self.calculateFanout(layout)
     layout[:state][:fan], fanout = *self.calculateFans(layout)
-pp layout[:state][:fan]
+
+    layout[:state][:fan].keys.each {|fan|
+      fanning = layout[:state][:fan][fan]
+      result = layout[:state][:outputs][fanning]
+      fanref = {:type => :fan, :ref => fan}
+
+      layout[:state][:outputs][fanref] = result
+      layout[:state][:outputs][fanning] = fanref
+    }
 
     layout[:state][:mul].values.each {|mul|
       [:left, :right].each {|sym|
