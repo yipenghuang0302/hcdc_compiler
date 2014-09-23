@@ -207,17 +207,6 @@ class Layout
     }
   end
 
-  def self.prodmap(factors, mapping, *product)
-    [*factors[:single], *(factors[:product] || [])].each {|item|
-      key = (product + [item]).flatten.sort.reverse
-      mapping[key] = [item, *product]
-    }
-    unless factors.leaf? then
-      prodmap(factors[:across], mapping, factors[:factor], *product)
-      prodmap(factors[:other], mapping, *product)
-    end
-  end
-
   def self.parseAdjacency(adj, result)
     terms, mults, ints = [], [], []
     Layout.edges(adj) {|src, dst, weight|
@@ -244,8 +233,7 @@ class Layout
     factors = mults.map {|src, dst, weight| dst}.factor
     singles = LayoutGraph::Var.vars(*terms.map {|src, w| src}.select {|src| src.length == 1})
     node = LayoutGraph::Add.append(factors.node, singles)
-    prods = Hash.new
-    Layout.prodmap(factors, prods)
+
 
     # Now all we have to do is factor everything
     { :terms => terms,           # Terms that get added to the result
@@ -261,8 +249,8 @@ class Layout
         :add => LayoutGraph::Add.table,
         :terms => LayoutGraph::Add.terms,
         :outputs => LayoutGraph::Node.table,
-      },
-      :prods => prods }     # `Inverse' of factor -- maps terms to factor sequence
+      }
+    }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
   def self.script(input, quiet=false)
