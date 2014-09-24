@@ -5,33 +5,21 @@ require './fanout'
 
 module Wiring
 class Node
-  @@connID = 0
-  attr_reader :connection, :column, :row
+  attr_reader :column, :row, :type
 
-  def initialize(index, single=false)
+  def initialize(index)
+    single = self.is_a?(Int)
+    @type = self.class.to_s.downcase.split(/::/)[-1]
+
     col = single ? nil : (index % 2 == 0 ? 'l' : 'r')
     row = index/(single ? 1 : 2) + 1
 
-    @connection = @@connID
-    @column = ['col', getType, col].compact.join('_')
-    @row =  "row_{row}"
-    @inputs = Hash.new
-
-    @@connID += 1
+    @column = ['col', @type, col].compact.join('_')
+    @row =  "row_#{row}"
   end
 
-  def getType
-    raise "getType unimplemented"
-  end
-
-  def input=(node)
-    num = @input.size
-    @input[node] = num
-    self
-  end
-
-  def input(node)
-    @input[node]
+  def inspect
+    "{#{@type} at (#{@row}, #{@column})}"
   end
 end
 
@@ -46,10 +34,6 @@ class Mul < Node
   def self.count
     @@count
   end
-
-  def getType
-    "mul"
-  end
 end
 
 class Fan < Node
@@ -63,26 +47,18 @@ class Fan < Node
   def self.count
     @@count
   end
-
-  def getType
-    "fan"
-  end
 end
 
 class Int < Node
   @@count = 0
 
   def initialize
-    super(@@count, true)
+    super(@@count)
     @@count += 1
   end
 
   def self.count
     @@count
-  end
-
-  def getType
-    "int"
   end
 end
 end
