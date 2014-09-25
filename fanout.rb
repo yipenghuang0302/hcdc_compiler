@@ -62,11 +62,15 @@ class Fanout
       node = feeder
     end
 
+    # The output node has no outputs. Just a good idea.
+    layout[:state][:outputs][output] = []
+
     { :node => node,
       :result => layout[:result],
       :mul => layout[:state][:mul],
       :add => layout[:state][:add],
       :fan => layout[:state][:fan],
+      :output => Hash.new, # So that we can index by the output node
       :outputs => layout[:state][:outputs] }
   end
 
