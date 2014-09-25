@@ -5,29 +5,53 @@ require './fanout'
 
 module Wiring
 class Node
-  attr_reader :column, :row, :type
+  @@fanout = nil
+  def self.fanout=(fanout)
+    @@fanout = fanout
+  end
 
-  def initialize(index)
+  attr_reader :column, :row, :type, :index, :key, :data, :outputs
+
+  def initialize(index, key)
     single = self.is_a?(Int)
-    @type = self.class.to_s.downcase.split(/::/)[-1]
 
     col = single ? nil : (index % 2 == 0 ? 'l' : 'r')
     row = index/(single ? 1 : 2) + 1
 
-    @column = ['col', @type, col].compact.join('_')
-    @row =  "row_#{row}"
+    @type = self.class.to_s.downcase.split(/::/)[-1]
+    sym = (@type == 'int') ? :var : @type.intern
+
+    hkey = {:type => sym, :ref => key}
+    data = @@fanout[sym][key]
+    outputs = @@fanout[:outputs][hkey]
+
+    @index, @key, @data, @outputs = index + 1, hkey, data, outputs
+    @column, @row = ['col', @type, col].compact.join('_'), "row_#{row}"
+    @input, @output = 0, 0
   end
 
   def inspect
-    "{#{@type} at (#{@row}, #{@column})}"
+    [ "{==",
+      "  #{@type}[#{@index}] at (#{@row}, #{@column})",
+      "  #{@key.inspect} yielding #{@data.inspect}",
+      "  #> #{@outputs.inspect}",
+      "==}" ].join("\n")
+  end
+
+  def nextInput
+    @input += 1
+  end
+
+  def nextOutput
+    @output += 1
   end
 end
 
 class Mul < Node
   @@count = 0
 
-  def initialize
-    super(@@count)
+  def initialize(key)
+    super(@@count, key)
     @@count += 1
   end
 
@@ -39,8 +63,8 @@ end
 class Fan < Node
   @@count = 0
 
-  def initialize
-    super(@@count)
+  def initialize(key)
+    super(@@count, key)
     @@count += 1
   end
 
@@ -52,8 +76,8 @@ end
 class Int < Node
   @@count = 0
 
-  def initialize
-    super(@@count)
+  def initialize(key)
+    super(@@count, key)
     @@count += 1
   end
 
@@ -71,20 +95,22 @@ class Wire
     :fans => 8
   }
 
-  @@muls, @@fans, @@ints = Hash.new, Hash.new, Hash.new
-
   def self.generate(fanout)
     fanout[:var] = Hash.new
     0.upto(fanout[:result] - 1) {|order| fanout[:var][order] = {:type => :var, :ref => order}} 
 
     byclass = {:var => Wiring::Int, :mul => Wiring::Mul, :fan => Wiring::Fan}
-    byhash = {:var => @@ints, :mul => @@muls, :fan => @@fans}
+    Wiring::Node.fanout = fanout
 
-    [:var, :mul, :fan].each {|node|
-      fanout[node].keys.sort.each {|key|
-        byhash[node][key] = byclass[node].new
+    nodes = [:var, :mul, :fan].map {|node|
+      fanout[node].keys.sort.map {|key|
+        byclass[node].new(key)
       }
+    }.flatten
+    index = nodes.inject({:index => 0}) {|h, node|
+      h.update(node.key => h[:index], :index => h[:index] + 1)
     }
+    index.delete(:index)
 
     error("Not enough integrators to solve #{integrators} order equation!") if Wiring::Int.count > @@nums[:ints]
     error("Not enough multipliers available!") if Wiring::Mul.count > @@nums[:muls]
