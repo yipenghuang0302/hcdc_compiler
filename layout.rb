@@ -242,13 +242,8 @@ class Layout
     LayoutGraph::Node.outputs({:type => :var, :ref => conn[:result] - 1}, node)
     LayoutGraph::Var.integrators(conn[:result] - 1)
 
-
     # Now all we have to do is factor everything
-    { :terms => terms,           # Terms that get added to the result
-      :result => conn[:result],  # Max order needed...
-      :mults => mults,           # Anything that has things multipied together: [src, dst, weight]1
-      :ints => ints,             # Integrations
-      :result => conn[:result],  # Max order needed...
+    { :result => conn[:result],  # Max order needed...
       :factors => factors,       # Factor hashses (see #factor above)
       :node => node,
       :state => {
