@@ -20,6 +20,14 @@ class Node
     @@nodes
   end
 
+  def self.wire
+    @@nodes.map {|node| node.wire}.flatten
+  end
+
+  def wire
+    nil
+  end
+
   attr_reader :column, :row, :type, :index, :key, :data, :outputs
 
   def initialize(index, key)
@@ -122,7 +130,7 @@ class Wire
     error("Not enough fanouts available!") if Wiring::Fan.count > @@nums[:fans]
     ## Wirings merely connect outputs to inputs (i.e. it goes `forward')
 
-    nil
+    Wiring::Node.wire
   end
 
   def self.script(input, quiet=false, readout)
