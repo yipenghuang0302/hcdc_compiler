@@ -3,7 +3,7 @@ require './base'
 require './layout'
 
 class Fanout
-  def self.calculateFans(layout)
+  def self.calculateFans(layout, readout)
     fanid, fans = 0, layout[:state][:outputs].select {|key, value| value.length > 1}
     fanning2id, id2fanning = {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
 
@@ -20,8 +20,15 @@ class Fanout
     return (fanout[ref[:type]].include?(ref[:ref])) ? ref.update(:type => :fan, :ref => fanout[ref[:type]][ref[:ref]]) : ref
   end
 
-  def self.calculateFanout(layout)
-    layout[:state][:fan], fanout = *self.calculateFans(layout)
+  def self.calculateFanout(layout, readout)
+    output = {:type => :output, :ref => 0}
+    if readout != layout[:result] then
+      # The given variable is guaranteed to have an output either to another
+      # integrator or if it is order 0 to the overall equation (as otherwise
+      # a change of variable could easily reduce the order)
+      layout[:state][:outputs][{:type => :var, :ref => readout}] << output
+    end
+    layout[:state][:fan], fanout = *self.calculateFans(layout, readout)
 
     layout[:state][:fan].keys.each {|fan|
       fanning = layout[:state][:fan][fan]
@@ -41,7 +48,21 @@ class Fanout
       add[:terms].map! {|fanning| Fanout.updateFanout(fanning, fanout)}
     }
 
-    { :node => layout[:node],
+    node = layout[:node]
+    if readout == layout[:result] then
+      # Add a fan for the final node to feed into and then fan this result
+      # to the output and into the first integrator
+      feeder = {:type => :fan, :ref => layout[:state][:fan].keys.max + 1}
+      int = {:type => :var, :ref => layout[:result] - 1}
+
+      ## Update the node to go to this.
+      layout[:state][:outputs][node].map! {|item| item == int ? feeder : item}
+      layout[:state][:outputs][feeder] = [int, output]
+      layout[:state][:fan][2] = node
+      node = feeder
+    end
+
+    { :node => node,
       :result => layout[:result],
       :mul => layout[:state][:mul],
       :add => layout[:state][:add],
@@ -50,7 +71,7 @@ class Fanout
   end
 
   def self.script(input, quiet=false, readout)
-    fanout = Fanout.calculateFanout(Layout.script(input, quiet, readout))
+    fanout = Fanout.calculateFanout(Layout.script(input, quiet), readout)
     puts "<fanout>"
     pp fanout
     puts "</fanout>"
