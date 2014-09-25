@@ -4,28 +4,48 @@ require './base'
 require './fanout'
 
 module Wiring
+class Connection
+  attr_reader :source, :output, :destination, :input
+
+  def initialize(src, output, dst, input)
+    @source, @output = src, output
+    @destination, @input = dst, input
+  end
+
+  def inspect
+    "%s::%d => %s::%d" % [
+      @source.inspect(true),
+      @output,
+      @destination.inspect(true),
+      @input
+    ]
+  end
+end
+
 class Node
   @@fanout, @@nodes = nil, Hash.new
   def self.fanout=(fanout)
     @@fanout = fanout
-  end
-
-  def self.nodes=(array)
-    @@nodes = array
-    @@index = array.inject({:index => 0}) {|h, node|
-      h.update(node.key => h[:index], :index => h[:index] + 1)
-    }
-    @@index.delete(:index)
-
-    @@nodes
+    Output.new
   end
 
   def self.wire
     @@nodes.values.map {|node| node.wire}.flatten
   end
 
+  # Skip additions and go straight to where the data should go.
+  def self.getNode(node)
+    if node[:type] == :add then
+      @@fanout[:outputs][node].map {|node| self.getNode(node)}
+    else
+      @@nodes[node]
+    end
+  end
+
   def wire
-    nil
+    outputs.map {|dst| Node.getNode(dst)}.flatten.map {|dst|
+      Connection.new(self, self.nextOutput, dst, dst.nextInput)
+    }
   end
 
   attr_reader :column, :row, :type, :index, :key, :data, :outputs
@@ -49,12 +69,16 @@ class Node
     @input, @output = 0, 0
   end
 
-  def inspect
-    [ "{==",
-      "  #{@type}[#{@index}] at (#{@row}, #{@column})",
-      "  #{@key.inspect} yielding #{@data.inspect}",
-      "  #> #{@outputs.inspect}",
-      "==}" ].join("\n")
+  def inspect(short=false)
+    if short then
+      "(<@{type}[#{@index}]:#{@row},#{@column}>)"
+    else
+      [ "{==",
+        "  #{@type}[#{@index}] at (#{@row}, #{@column})",
+        "  #{@key.inspect} yielding #{@data.inspect}",
+        "  #> #{@outputs.inspect}",
+        "==}" ].join("\n")
+    end
   end
 
   def nextInput
@@ -97,6 +121,20 @@ class Int < Node
 
   def initialize(key)
     super(@@count, key)
+    @@count += 1
+  end
+
+  def self.count
+    @@count
+  end
+end
+
+## Must come last.
+class Output < Node
+  @@count = 0
+  def initialize
+    raise "Output generated twice" if @@count > 0
+    super(@@count, 0)
     @@count += 1
   end
 
