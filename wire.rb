@@ -5,7 +5,7 @@ require './fanout'
 
 module Wiring
 class Node
-  @@fanout, @@nodes, @@index = nil
+  @@fanout, @@nodes = nil, Hash.new
   def self.fanout=(fanout)
     @@fanout = fanout
   end
@@ -21,7 +21,7 @@ class Node
   end
 
   def self.wire
-    @@nodes.map {|node| node.wire}.flatten
+    @@nodes.values.map {|node| node.wire}.flatten
   end
 
   def wire
@@ -43,6 +43,7 @@ class Node
     data = @@fanout[sym][key]
     outputs = @@fanout[:outputs][hkey]
 
+    @@nodes[hkey] = self
     @index, @key, @data, @outputs = index + 1, hkey, data, outputs
     @column, @row = ['col', @type, col].compact.join('_'), "row_#{row}"
     @input, @output = 0, 0
@@ -119,11 +120,11 @@ class Wire
 
     byclass = {:var => Wiring::Int, :mul => Wiring::Mul, :fan => Wiring::Fan}
     Wiring::Node.fanout = fanout
-    Wiring::Node.nodes = [:var, :mul, :fan].map {|node|
-      fanout[node].keys.sort.map {|key|
+    [:var, :mul, :fan].each {|node|
+      fanout[node].keys.sort.each {|key|
         byclass[node].new(key)
       }
-    }.flatten
+    }
 
     error("Not enough integrators to solve #{integrators} order equation!") if Wiring::Int.count > @@nums[:ints]
     error("Not enough multipliers available!") if Wiring::Mul.count > @@nums[:muls]
