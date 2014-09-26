@@ -141,9 +141,9 @@ class Wire
       }
     }
 
-    error("Not enough integrators to solve #{integrators} order equation!") if Wiring::Int.count > @@nums[:ints]
-    error("Not enough multipliers available!") if Wiring::Mul.count > @@nums[:muls]
-    error("Not enough fanouts available!") if Wiring::Fan.count > @@nums[:fans]
+    error("Not enough integrators to solve #{fanout[:result]} order equation!", -1) if Wiring::Int.count > @@nums[:ints]
+    error("Not enough multipliers available!", -1) if Wiring::Mul.count > @@nums[:muls]
+    error("Not enough fanouts available!", -1) if Wiring::Fan.count > @@nums[:fans]
     ## Wirings merely connect outputs to inputs (i.e. it goes `forward')
 
     Wiring::Node.wire
