@@ -20,6 +20,12 @@ def script(klass, *args, &block)
   klass.script(readDiffEq, *args, &block)
 end
 
+class Object
+  def base_class_name
+    self.class.to_s.split(/::/)[-1]
+  end
+end
+
 # Some helper methods to make code a bit nicer
 class Array
   def sum(init=0)

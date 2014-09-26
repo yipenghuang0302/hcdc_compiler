@@ -3,11 +3,27 @@ require './base'
 require './wire'
 
 module Wiring
+class Node
+  def single
+    is_a?(Int)
+  end
+
+  def row
+    "row_#{index / (single ? 1 : 2)}"
+  end
+
+  def column
+    type = base_class_name.downcase
+    col = single ? nil : (index % 2 == 0) ? 'l' : 'r'
+    ["col", type, col].compact.join('_')
+  end  
+end
+
 class Connection
   def c_code
 <<-C_CODE
 conn conn_#{@connID} = {
-  #{@source.row}, #{@source.column}, out_#{@output-1}, #{@destination.row}, #{@destination.column}, in_#{@input}
+  #{@source.row}, #{@source.column}, out_#{@output}, #{@destination.row}, #{@destination.column}, in_#{@input}
 };
 set_conn (conn_#{@connID});
 C_CODE

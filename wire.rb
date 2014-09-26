@@ -62,45 +62,38 @@ class Node
     additions + rest
   end
 
-  attr_reader :column, :row, :type, :index, :key, :data, :outputs
+  attr_reader :index, :key, :data, :outputs
 
   def initialize(index, key)
-    single = self.is_a?(Int)
-
-    col = single ? nil : (index % 2 == 0 ? 'l' : 'r')
-    row = index/(single ? 1 : 2) + 1
-
-    @type = self.class.to_s.downcase.split(/::/)[-1]
-    sym = (@type == 'int') ? :var : @type.intern
+    sym = self.is_a?(Int) ? :var : self.class.to_s.downcase.split(/::/)[-1].intern
 
     hkey = {:type => sym, :ref => key}
     data = @@fanout[sym][key]
     outputs = @@fanout[:outputs][hkey]
 
     @@nodes[hkey] = self
-    @index, @key, @data, @outputs = index + 1, hkey, data, outputs
-    @column, @row = ['col', @type, col].compact.join('_'), "row_#{row}"
+    @index, @key, @data, @outputs = index, hkey, data, outputs
     @input, @output = 0, 0
   end
 
   def to_s
-    "(<@{type}[#{@index}]:#{@row},#{@column}>)"
+    "(<#{self.base_class_name}:#{@index}>)"
   end
 
   def inspect
-    [ "{==",
-      "  #{@type}[#{@index}] at (#{@row}, #{@column})",
-      "  #{@key.inspect} yielding #{@data.inspect}",
-      "  #> #{@outputs.inspect}",
-      "==}" ].join("\n")
+    "(<#{self.base_class_name}:#{@index} -- #{@key.inspect} => #{@data.inspect} #> #{@outputs.inspect}>)"
   end
 
   def nextInput
+    result = @input
     @input += 1
+    result
   end
 
   def nextOutput
+    result = @output
     @output += 1
+    result
   end
 end
 
