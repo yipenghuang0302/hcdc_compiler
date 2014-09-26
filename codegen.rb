@@ -47,10 +47,12 @@ class CodeGen
     rescue Exception => e
       error("Error working with the given file #{file}:\n\t#{e.message}", -1)
     end
-    connections.each {|conn|
+    puts "<c>"
+    connections.each_with_index {|conn, i|
+      puts unless i == 0
       puts conn.c_code
-      puts
     }
+    puts "</c>"
   end
 end
 
