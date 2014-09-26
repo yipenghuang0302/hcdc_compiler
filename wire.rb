@@ -154,6 +154,7 @@ class Wire
     puts "<wiring>"
     wiring.each {|wire| puts "  - #{wire}"}
     puts "</wiring>"
+    wiring
   end
 end
 
