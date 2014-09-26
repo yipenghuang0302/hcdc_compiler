@@ -19,9 +19,9 @@ class Connection
   def inspect
     "Connection %d:\t%s::%d => %s::%d" % [
       @connID,
-      @source.inspect(true),
+      @source,
       @output,
-      @destination.inspect(true),
+      @destination,
       @input
     ]
   end
@@ -83,16 +83,16 @@ class Node
     @input, @output = 0, 0
   end
 
-  def inspect(short=false)
-    if short then
-      "(<@{type}[#{@index}]:#{@row},#{@column}>)"
-    else
-      [ "{==",
-        "  #{@type}[#{@index}] at (#{@row}, #{@column})",
-        "  #{@key.inspect} yielding #{@data.inspect}",
-        "  #> #{@outputs.inspect}",
-        "==}" ].join("\n")
-    end
+  def to_s
+    "(<@{type}[#{@index}]:#{@row},#{@column}>)"
+  end
+
+  def inspect
+    [ "{==",
+      "  #{@type}[#{@index}] at (#{@row}, #{@column})",
+      "  #{@key.inspect} yielding #{@data.inspect}",
+      "  #> #{@outputs.inspect}",
+      "==}" ].join("\n")
   end
 
   def nextInput
@@ -152,7 +152,7 @@ class Wire
   def self.script(input, quiet=false, readout)
     wiring = Wire.generate(Fanout.script(input, quiet, readout))
     puts "<wiring>"
-    wiring.each {|wire| puts "  - #{wire.inspect}"}
+    wiring.each {|wire| puts "  - #{wire}"}
     puts "</wiring>"
   end
 end
