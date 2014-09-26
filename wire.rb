@@ -160,18 +160,3 @@ end
 
 
 script(Wire, true, ARGV.shift.to_i) if __FILE__ == $0
-
-=begin
-{:node=>{:type=>:add, :ref=>0},
- :result=>2,
- :mul=>{},
- :add=>{0=>{:terms=>[{:type=>:var, :ref=>0}, {:type=>:fan, :ref=>0}]}},
- :fan=>{0=>{:type=>:var, :ref=>1}},
- :outputs=>
-  {{:type=>:var, :ref=>0}=>[{:type=>:add, :ref=>0}],
-   {:type=>:var, :ref=>1}=>[{:type=>:fan, :ref=>0}],
-   {:type=>:fan, :ref=>0}=>
-    [{:type=>:add, :ref=>0},
-     {:type=>:output, :ref=>0},
-     {:type=>:var, :ref=>0}]}}
-=end
