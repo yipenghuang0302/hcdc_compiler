@@ -25,12 +25,3 @@ class CodeGen
 end
 
 script(CodeGen, true, ARGV.shift.to_i) if __FILE__ == $0
-
-=begin
-
-conn conn_2 = {
-  row_1, col_mul_l, out_0, row_1, col_int, in_0
-};
-set_conn (conn_2); 
-
-=end
