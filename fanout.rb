@@ -81,64 +81,7 @@ class Fanout
       :mul => layout[:state][:mul],
       :add => layout[:state][:add],
       :fan => layout[:state][:fan],
-      :output => {},
       :outputs => layout[:state][:outputs] }
-  end
-
-  def self.updateMul(tosplit, fanto, mul, key)
-    return [fanto, mul[:right]] if mul[:left] == tosplit
-    return [mul[:left], fanto] if mul[:right] == tosplit
-    error("Cannot find #{tosplit.inspect} in mul #{mul.inspect} (#{key.inspect})", -1)
-  end
-
-  def self.updateAdd(tosplit, fanto, add, key)
-    where = add[:terms].index(tosplit)
-    error("Cannot find #{tosplit.inspect} in #{add.inspect} (#{key.inspect})", -1) if where.nil?
-    terms = add[:terms].dup
-    terms[where] = fanto
-    return terms
-  end
-
-  def self.splitFans(fanout)
-    tosplit = fanout[:outputs].select {|key, outputs| outputs.length > 3}.map {|key, outputs| key[:ref]}
-    return fanout if tosplit.empty?
-    fanid = fanout[:fan].keys.max + 1
-    tosplit = {:type => :fan, :ref => tosplit.min}
-    fanto = {:type => :fan, :ref => fanid}
-
-    fanout[:fan][fanid] = tosplit
-    first, second, *rest = *fanout[:outputs][tosplit]
-    fanout[:outputs][tosplit] = [first, second, fanto]
-    fanout[:outputs][fanto] = rest
-
-    rest.reject {|key| [:var, :output].include?(key[:type])}.each {|key|
-      if key[:type] == :mul then
-        mul = fanout[:mul][key[:ref]]
-        mul[:left], mul[:right] = *Fanout.updateMul(tosplit, fanto, mul, key)
-      elsif key[:type] == :add then
-        add = fanout[:add][key[:ref]]
-        add[:terms] = Fanout.updateAdd(tosplit, fanto, add, key)
-      else
-        error("Unknown node type #{key.inspect}")
-      end
-    }
-
-    fanout[:node] = fanto if fanout[:node] == tosplit
-    Fanout.splitFans(fanout)
-  end
-
-  def self.updateOutput(fanout)
-    fanout.update(:output => fanout[:fan].keys.map {|key| [key, fanout[:outputs][{:type => :fan, :ref => key}]]}.select {|key, output|
-      output.any? {|out| out[:type] == :output}
-    }.map {|key, output| [key, output.select {|out| out[:type] == :output}]}.inject(Hash.new) {|h, (k, o)|
-      error("Fan #{key} wired to more than one output", -1) if o.length > 1
-      o = o[0][:ref]
-      h.update(o => {:type => :fan, :ref => k})
-    })
-  end
-
-  def self.calculateFanout(layout, *readouts)
-    Fanout.updateOutput(Fanout.splitFans(Fanout.basicFanout(layout, *readouts)))
   end
 
   def self.usage
@@ -154,7 +97,7 @@ class Fanout
     readouts = readouts.flatten.map {|i| i.to_i}.select {|i|
       i.between?(0, layout[:result])
     }.uniq.sort
-    fanout = Fanout.calculateFanout(layout, *readouts)
+    fanout = Fanout.basicFanout(layout, *readouts)
     puts "<fanout>"
     pp fanout
     puts "</fanout>"

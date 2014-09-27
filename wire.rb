@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require './base'
-require './fanout'
+require './kfans'
 
 module Wiring
 class Connection
@@ -150,8 +150,8 @@ class Wire
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false, readouts)
-    wiring = Wire.generate(Fanout.script(input, quiet, readouts))
+  def self.script(input, quiet=false, kfan=3, readouts)
+    wiring = Wire.generate(KFans.script(input, quiet, kfan, readouts))
     puts "<wiring>"
     wiring.each {|wire| puts "  - #{wire}"}
     puts "</wiring>"
@@ -160,4 +160,4 @@ class Wire
 end
 
 
-script(Wire, true, ARGV) if __FILE__ == $0
+script(Wire, true, 3, ARGV) if __FILE__ == $0
