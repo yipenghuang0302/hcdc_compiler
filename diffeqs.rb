@@ -63,10 +63,12 @@ def generateDiffeqs(diffeq)
 end
 
 # Run the given script with the given diffeq
-def runDiffeq(diffeq, script)
+def runDiffeq(diffeq, script, *args)
+  cmdline = [script, "--", *args.compact.map {|a| a.to_s}]
+  $stdout.puts("cmd: #{cmdline.join(' ')}")
   generateDiffeqs(diffeq) {|eq|
     $stdout.puts ">>> #{eq} <<<"
-    Open3.popen3("ruby", script) {|stdin, stdout, stderr, wait_thr|
+    Open3.popen3("ruby", *cmdline) {|stdin, stdout, stderr, wait_thr|
       stdin.puts(eq)
       stdin.close
       $stdout.puts stdout.readlines
@@ -92,7 +94,7 @@ def eqshifts
 end
 
 
-script = "diffeq.rb"
+script, output, file = "diffeq.rb", 0, nil
 ARGV.map {|arg|
   case arg
     when "-d"
@@ -100,6 +102,21 @@ ARGV.map {|arg|
       nil
     when "-l"
       script = "layout.rb"
+      nil
+    when "-f"
+      script = "fanout.rb"
+      nil
+    when "-w"
+      script = "wire.rb"
+      nil
+    when "-c"
+      script = "codegen.rb"
+      nil
+    when /^-o=(\d+)$/
+      output = $1.to_i
+      nil
+    when /^-c=(.*)$/
+      file = $1
       nil
     when /^\d+$/
       arg.to_i
@@ -113,7 +130,7 @@ ARGV.map {|arg|
   $stderr.puts "Checking arg #{arg}"
   arg.partition {|arr|
     arr.diffeqs {|diffeq|
-      runDiffeq(diffeq, script)
+      runDiffeq(diffeq, script, output, file)
     }
   }
 }
