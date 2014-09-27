@@ -17,6 +17,10 @@ end
 
 # For any given class, run it's script class method, adding a diffeq as the first parameter
 def script(klass, *args, &block)
+  if $stdin.tty? then
+    klass.usage
+    $stdout.puts
+  end
   klass.script(readDiffEq, *args, &block)
 end
 

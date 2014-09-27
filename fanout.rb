@@ -3,7 +3,7 @@ require './base'
 require './layout'
 
 class Fanout
-  def self.calculateFans(layout, readout)
+  def self.calculateFans(layout)
     fanid, fans = 0, layout[:state][:outputs].select {|key, value| value.length > 1}
     fanning2id, id2fanning = {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
 
@@ -20,15 +20,18 @@ class Fanout
     return (fanout[ref[:type]].include?(ref[:ref])) ? ref.update(:type => :fan, :ref => fanout[ref[:type]][ref[:ref]]) : ref
   end
 
-  def self.calculateFanout(layout, readout)
-    output = {:type => :output, :ref => 0}
-    if readout != layout[:result] then
+  def self.calculateFanout(layout, *readouts)
+    output_ref = 0
+
+    readouts.each {|readout|
+      next if readout == layout[:result]
       # The given variable is guaranteed to have an output either to another
       # integrator or if it is order 0 to the overall equation (as otherwise
       # a change of variable could easily reduce the order)
-      layout[:state][:outputs][{:type => :var, :ref => readout}] << output
-    end
-    layout[:state][:fan], fanout = *self.calculateFans(layout, readout)
+      layout[:state][:outputs][{:type => :var, :ref => readout}] << {:type => :output, :ref => output_ref}
+      output_ref += 1
+    }
+    layout[:state][:fan], fanout = *self.calculateFans(layout)
 
     layout[:state][:fan].keys.each {|fan|
       fanning = layout[:state][:fan][fan]
@@ -49,7 +52,7 @@ class Fanout
     }
 
     node = layout[:node]
-    if readout == layout[:result] then
+    if readouts.include?(layout[:result]) then
       # Add a fan for the final node to feed into and then fan this result
       # to the output and into the first integrator
       feeder = {:type => :fan, :ref => layout[:state][:fan].keys.max + 1}
@@ -57,13 +60,17 @@ class Fanout
 
       ## Update the node to go to this.
       layout[:state][:outputs][node].map! {|item| item == int ? feeder : item}
-      layout[:state][:outputs][feeder] = [int, output]
+      layout[:state][:outputs][feeder] = [int, {:type => :output, :ref => output_ref}]
       layout[:state][:fan][2] = node
+
+      output_ref += 1
       node = feeder
     end
 
     # The output node has no outputs. Just a good idea.
-    layout[:state][:outputs][output] = []
+    (0...output_ref).each {|output|
+      layout[:state][:outputs][output] = []
+    }
 
     { :node => node,
       :result => layout[:result],
@@ -74,8 +81,20 @@ class Fanout
       :outputs => layout[:state][:outputs] }
   end
 
-  def self.script(input, quiet=false, readout)
-    fanout = Fanout.calculateFanout(Layout.script(input, quiet), readout)
+  def self.usage
+    puts "ruby fanout.rb output+"
+    puts "\tArguments are up to four orders to output"
+    puts "\t-- order 0 is y, order 1 is y', can go up to the LHS of the equation"
+    puts "\t-- outputs are uniqued and sorted"
+    puts "\tIf input is not piped in, a diffeq will be requested"
+  end
+
+  def self.script(input, quiet=false, *readouts)
+    layout = Layout.script(input, quiet)
+    readouts = readouts.flatten.map {|i| i.to_i}.select {|i|
+      i.between?(0, layout[:result])
+    }.uniq.sort
+    fanout = Fanout.calculateFanout(layout, *readouts)
     puts "<fanout>"
     pp fanout
     puts "</fanout>"
@@ -84,4 +103,4 @@ class Fanout
   end
 end
 
-script(Fanout, true, ARGV.shift.to_i) if __FILE__ == $0
+script(Fanout, true, ARGV) if __FILE__ == $0

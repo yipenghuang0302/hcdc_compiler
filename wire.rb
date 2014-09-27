@@ -142,8 +142,16 @@ class Wire
     Wiring::Node.wire
   end
 
-  def self.script(input, quiet=false, readout)
-    wiring = Wire.generate(Fanout.script(input, quiet, readout))
+  def self.usage
+    puts "ruby wire.rb output+"
+    puts "\tArguments are up to four orders to output"
+    puts "\t-- order 0 is y, order 1 is y', can go up to the LHS of the equation"
+    puts "\t-- outputs are uniqued and sorted"
+    puts "\tIf input is not piped in, a diffeq will be requested"
+  end
+
+  def self.script(input, quiet=false, readouts)
+    wiring = Wire.generate(Fanout.script(input, quiet, readouts))
     puts "<wiring>"
     wiring.each {|wire| puts "  - #{wire}"}
     puts "</wiring>"

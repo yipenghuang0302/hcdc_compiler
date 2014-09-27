@@ -441,6 +441,12 @@ class Connections
     }
   end
 
+  def self.usage
+    puts "ruby diffeq.rb"
+    puts "\tNo arguments used at all"
+    puts "\tIf input is not piped in, a diffeq will be requested"
+  end
+
   def self.script(input, quiet=false)
     conn = Connections.new(input, quiet)
     puts "differential equation is: #{conn.instance_eval {@diffeq}.inspect}"

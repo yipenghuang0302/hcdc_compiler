@@ -256,6 +256,12 @@ class Layout
     }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
+  def self.usage
+    puts "ruby layout.rb"
+    puts "\tNo arguments used at all"
+    puts "\tIf input is not piped in, a diffeq will be requested"
+  end
+
   def self.script(input, quiet=false)
     layout = Layout.layout(Connections.script(input, quiet))
     puts "<layout-factoring>"

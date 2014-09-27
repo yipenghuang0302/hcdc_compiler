@@ -32,8 +32,17 @@ end
 end
 
 class CodeGen
-  def self.script(input, quiet=false, readout=0, file=nil)
-    connections = Wire.script(input, quiet, readout)
+  def self.usage
+    puts "ruby fanout.rb -o=file.c output+"
+    puts "\t-o outputs to file.c (can be any file with (c|h)(pp)? extension"
+    puts "\tRemaining arguments are up to four orders to output"
+    puts "\t-- order 0 is y, order 1 is y', can go up to the LHS of the equation"
+    puts "\t-- outputs are uniqued and sorted"
+    puts "\tIf input is not piped in, a diffeq will be requested"
+  end
+
+  def self.script(input, quiet=false, readouts=[], file=nil)
+    connections = Wire.script(input, quiet, readouts)
     begin
       unless file.nil? then
         error("C file must have valid extension", -1) unless file =~ /\.(c|h)(pp)?$/
@@ -56,4 +65,10 @@ class CodeGen
   end
 end
 
-script(CodeGen, true, ARGV.shift.to_i, ARGV.shift) if __FILE__ == $0
+if __FILE__ == $0 then
+  files, outputs = ARGV.partition {|arg| arg =~ /^-o=.+$/}
+  files = files.map {|f| f =~ /^-o=(.*?)$/; $1}.uniq
+  error("Cannot output c code to more than one file!", -1) if files.length > 1
+  error("Non-file arguments must be numeric.", -1) unless outputs.all? {|o| o =~ /^(-|\+)\d+$/}
+  script(CodeGen, true, outputs, files[0])
+end
