@@ -16,11 +16,12 @@ class Fanout
     return [id2fanning, fanning2id]
   end
 
-  def self.updateFanout(ref, fanout)
-    return (fanout[ref[:type]].include?(ref[:ref])) ? ref.update(:type => :fan, :ref => fanout[ref[:type]][ref[:ref]]) : ref
+  def self.updateToFan(key, fanout)
+    type, ref = key[:type], key[:ref]
+    return fanout[type].include?(ref) ? { :type => :fan, :ref => fanout[type][ref] } : key
   end
 
-  def self.calculateFanout(layout, *readouts)
+  def self.basicFanout(layout, *readouts)
     output_ref = 0
 
     readouts.each {|readout|
@@ -33,6 +34,7 @@ class Fanout
     }
     layout[:state][:fan], fanout = *self.calculateFans(layout)
 
+    ## Put the fan in between input and output -- i.e. make it a fan
     layout[:state][:fan].keys.each {|fan|
       fanning = layout[:state][:fan][fan]
       result = layout[:state][:outputs][fanning]
@@ -42,26 +44,28 @@ class Fanout
       layout[:state][:outputs][fanning] = [fanref]
     }
 
+    ## Fanout, a hash from fanning (what needs to fan) to fan id
     layout[:state][:mul].values.each {|mul|
       [:left, :right].each {|sym|
-        mul[sym] = Fanout.updateFanout(mul[sym], fanout)
+        mul[sym] = Fanout.updateToFan(mul[sym], fanout)
       }
     }
     layout[:state][:add].values.each {|add|
-      add[:terms].map! {|fanning| Fanout.updateFanout(fanning, fanout)}
+      add[:terms].map! {|fanning| Fanout.updateToFan(fanning, fanout)}
     }
 
     node = layout[:node]
     if readouts.include?(layout[:result]) then
       # Add a fan for the final node to feed into and then fan this result
       # to the output and into the first integrator
-      feeder = {:type => :fan, :ref => layout[:state][:fan].keys.max + 1}
+      fanid = (layout[:state][:fan].keys.max || -1) + 1
+      feeder = {:type => :fan, :ref => fanid}
       int = {:type => :var, :ref => layout[:result] - 1}
 
       ## Update the node to go to this.
       layout[:state][:outputs][node].map! {|item| item == int ? feeder : item}
       layout[:state][:outputs][feeder] = [int, {:type => :output, :ref => output_ref}]
-      layout[:state][:fan][2] = node
+      layout[:state][:fan][fanid] = node
 
       output_ref += 1
       node = feeder
@@ -69,7 +73,7 @@ class Fanout
 
     # The output node has no outputs. Just a good idea.
     (0...output_ref).each {|output|
-      layout[:state][:outputs][output] = []
+      layout[:state][:outputs][{:type => :output, :ref => output}] = []
     }
 
     { :node => node,
@@ -77,8 +81,64 @@ class Fanout
       :mul => layout[:state][:mul],
       :add => layout[:state][:add],
       :fan => layout[:state][:fan],
-      :output => Hash.new, # So that we can index by the output node
+      :output => {},
       :outputs => layout[:state][:outputs] }
+  end
+
+  def self.updateMul(tosplit, fanto, mul, key)
+    return [fanto, mul[:right]] if mul[:left] == tosplit
+    return [mul[:left], fanto] if mul[:right] == tosplit
+    error("Cannot find #{tosplit.inspect} in mul #{mul.inspect} (#{key.inspect})", -1)
+  end
+
+  def self.updateAdd(tosplit, fanto, add, key)
+    where = add[:terms].index(tosplit)
+    error("Cannot find #{tosplit.inspect} in #{add.inspect} (#{key.inspect})", -1) if where.nil?
+    terms = add[:terms].dup
+    terms[where] = fanto
+    return terms
+  end
+
+  def self.splitFans(fanout)
+    tosplit = fanout[:outputs].select {|key, outputs| outputs.length > 3}.map {|key, outputs| key[:ref]}
+    return fanout if tosplit.empty?
+    fanid = fanout[:fan].keys.max + 1
+    tosplit = {:type => :fan, :ref => tosplit.min}
+    fanto = {:type => :fan, :ref => fanid}
+
+    fanout[:fan][fanid] = tosplit
+    first, second, *rest = *fanout[:outputs][tosplit]
+    fanout[:outputs][tosplit] = [first, second, fanto]
+    fanout[:outputs][fanto] = rest
+
+    rest.reject {|key| [:var, :output].include?(key[:type])}.each {|key|
+      if key[:type] == :mul then
+        mul = fanout[:mul][key[:ref]]
+        mul[:left], mul[:right] = *Fanout.updateMul(tosplit, fanto, mul, key)
+      elsif key[:type] == :add then
+        add = fanout[:add][key[:ref]]
+        add[:terms] = Fanout.updateAdd(tosplit, fanto, add, key)
+      else
+        error("Unknown node type #{key.inspect}")
+      end
+    }
+
+    fanout[:node] = fanto if fanout[:node] == tosplit
+    Fanout.splitFans(fanout)
+  end
+
+  def self.updateOutput(fanout)
+    fanout.update(:output => fanout[:fan].keys.map {|key| [key, fanout[:outputs][{:type => :fan, :ref => key}]]}.select {|key, output|
+      output.any? {|out| out[:type] == :output}
+    }.map {|key, output| [key, output.select {|out| out[:type] == :output}]}.inject(Hash.new) {|h, (k, o)|
+      error("Fan #{key} wired to more than one output", -1) if o.length > 1
+      o = o[0][:ref]
+      h.update(o => {:type => :fan, :ref => k})
+    })
+  end
+
+  def self.calculateFanout(layout, *readouts)
+    Fanout.updateOutput(Fanout.splitFans(Fanout.basicFanout(layout, *readouts)))
   end
 
   def self.usage

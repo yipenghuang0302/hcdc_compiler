@@ -34,7 +34,6 @@ class Node
   @@fanout, @@nodes = nil, Hash.new
   def self.fanout=(fanout)
     @@fanout = fanout
-    Output.new(0)
   end
 
   # We need to start from the root and go there.
@@ -52,7 +51,7 @@ class Node
     }.flatten
 
     # Now we just connect everything else EXCEPT additions
-    irregular = Proc.new {|node| [:output, :add].include?(node.key[:type])}
+    irregular = Proc.new {|node| node.key[:type] == :add}
     rest = @@nodes.values.reject(&irregular).map {|src|
       fromKeys[src.outputs].reject(&irregular).map {|dst|
         Connection.new(src, src.nextOutput, dst, dst.nextInput)
@@ -102,7 +101,6 @@ Mul, Fan, Int, Add, Output = *(1..5).map {
     self.class_variable_set("@@count", 0)
     def initialize(key)
       count = self.class.class_variable_get("@@count")
-      raise "Output generated twice" if self.is_a?(Output) && count > 0
       super(count, key)
       self.class.class_variable_set("@@count", count + 1)
     end
@@ -119,16 +117,17 @@ class Wire
   @@nums = {
     :ints => 4,
     :muls => 8,
-    :fans => 8
+    :fans => 8,
+    :outs => 4
   }
 
   def self.generate(fanout)
     fanout[:var] = Hash.new
     0.upto(fanout[:result] - 1) {|order| fanout[:var][order] = {:type => :var, :ref => order}} 
 
-    byclass = {:var => Wiring::Int, :mul => Wiring::Mul, :fan => Wiring::Fan, :add => Wiring::Add}
+    byclass = {:var => Wiring::Int, :mul => Wiring::Mul, :fan => Wiring::Fan, :add => Wiring::Add, :output => Wiring::Output}
     Wiring::Node.fanout = fanout
-    [:var, :mul, :fan, :add].each {|node|
+    [:var, :mul, :fan, :add, :output].each {|node|
       fanout[node].keys.sort.each {|key|
         byclass[node].new(key)
       }
@@ -137,6 +136,7 @@ class Wire
     error("Not enough integrators to solve #{fanout[:result]} order equation!", -1) if Wiring::Int.count > @@nums[:ints]
     error("Not enough multipliers available!", -1) if Wiring::Mul.count > @@nums[:muls]
     error("Not enough fanouts available!", -1) if Wiring::Fan.count > @@nums[:fans]
+    error("Not enough outputs available!", -1) if Wiring::Output.count > @@nums[:outs]
     ## Wirings merely connect outputs to inputs (i.e. it goes `forward')
 
     Wiring::Node.wire
@@ -160,4 +160,4 @@ class Wire
 end
 
 
-script(Wire, true, ARGV.shift.to_i) if __FILE__ == $0
+script(Wire, true, ARGV) if __FILE__ == $0
