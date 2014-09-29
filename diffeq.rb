@@ -6,32 +6,23 @@ require './tokenops'
 require 'pp'
 
 class Tokens
-  @toks, @parsed, @quiet = [], false, false
+  attr_accessor :quiet
+  attr_reader :tokens
+
+  @tokens, @parsed, @quiet = [], false, false
   def initialize(arr)
-    @toks = arr
-  end
-
-  def tokens
-    @toks
-  end
-
-  def quiet=(bool)
-    @quiet = bool
-  end
-
-  def quiet
-    @quiet
+    @tokens = arr
   end
 
   def showResult(string)
     $stdout.puts ""
-    @toks.show(string)
+    @tokens.show(string)
     self
   end
 
   def method_missing(meth, *args, &block)
     string = args.shift
-    @toks = @toks.send(meth, *args, &block) unless meth == :show
+    @tokens = @tokens.send(meth, *args, &block) unless meth == :show
     showResult(string) unless @quiet
     self
   end
@@ -63,7 +54,7 @@ class Tokens
         :orders => orders }
     }
     parse! unless @parsed
-    left, right = @toks.sides
+    left, right = @tokens.sides
     left.map!(&term_to_hash)
     right.map!(&term_to_hash)
 
@@ -89,9 +80,9 @@ class Tokens
   end
 
   def to_s
-    return @toks.map {|t| t.inspect}.join("; ") unless @parsed
+    return @tokens.map {|t| t.inspect}.join("; ") unless @parsed
 
-    left, right = @toks.translate(:term) {|sym, coef, (x, xs), (d, *orders)|
+    left, right = @tokens.translate(:term) {|sym, coef, (x, xs), (d, *orders)|
       xstr = (xs > 0) ? "x^#{xs}" : ""
       ystr = orders.map {|o| "y" + ("'" * o)}.join(" ")
       string = [coef, xstr, ystr].join(" ")
@@ -121,7 +112,6 @@ class Connections
 
   def connect
     result = @diffeq[:lhs][:orders][0]
-
     arr = (0..result).to_a.reverse
 
     adjlist = arr.inject(Graph.new) {|h, order|
