@@ -1,6 +1,8 @@
+#!/usr/bin/env ruby
 
 require './base'
 require './fanout'
+## See description method below for info.
 
 class KFans
   def self.updateMul(tosplit, fanto, mul, key)
@@ -56,6 +58,16 @@ class KFans
     })
   end
 
+  def self.description
+    puts <<-END_DESCRIPTION
+## kfans.rb:
+##
+## This merely takes the output of fanout.rb and adds fans so that each fan
+## has at most fanout 3. The fanout description can be seen on its own.
+##
+    END_DESCRIPTION
+  end
+
   def self.usage
     puts "ruby kfans.rb output+"
     puts "\tArguments are up to four orders to output"
@@ -64,17 +76,15 @@ class KFans
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false, kfan=3, *readouts)
-    error("Fanout must be an integer > 1", -1) unless kfan.is_a?(Integer) && kfan > 1
-    readouts.flatten!
-    fanout = Fanout.script(input, quiet, *readouts)
-    kfans = KFans.updateOutput(KFans.splitFans(kfan, fanout))
-    puts "<kfan=#{kfan}>"
+  def self.script(input)
+    kfans = KFans.updateOutput(KFans.splitFans(DIFFEQ_ARGS[:kfan], Fanout.script(input)))
+    self.describe
+    puts "<kfan=#{DIFFEQ_ARGS[:kfan]}>"
     pp kfans
     puts "</kfan>"
 
-    return fanout
+    return kfans
   end
 end
 
-script(KFans, true, 3, ARGV) if __FILE__ == $0
+script(KFans) if __FILE__ == $0

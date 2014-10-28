@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 
 require './base'
 require './wire'
@@ -59,6 +60,15 @@ end
 end
 
 class CodeGen
+  def self.description
+    puts <<-END_DESCRIPTION
+## codegen.rb:
+##
+## This file outputs the C-code that represents the results from wire.rb
+##
+    END_DESCRIPTION
+  end
+
   def self.usage
     puts "ruby fanout.rb -o=file.c output+"
     puts "\t-o outputs to file.c (can be any file with (c|h)(pp)? extension"
@@ -68,8 +78,10 @@ class CodeGen
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false, readouts=[], file=nil)
-    connections = Wire.script(input, quiet, readouts)
+  def self.script(input)
+    connections = Wire.script(input)
+    file = DIFFEQ_ARGS[:file]
+
     begin
       unless file.nil? then
         error("C file must have valid extension", -1) unless file =~ /\.(c|h)(pp)?$/
@@ -83,6 +95,7 @@ class CodeGen
     rescue Exception => e
       error("Error working with the given file #{file}:\n\t#{e.message}", -1)
     end
+    self.describe
     puts "<c>"
     connections.each_with_index {|conn, i|
       puts unless i == 0
@@ -92,10 +105,4 @@ class CodeGen
   end
 end
 
-if __FILE__ == $0 then
-  files, outputs = ARGV.partition {|arg| arg =~ /^-o=.+$/}
-  files = files.map {|f| f =~ /^-o=(.*?)$/; $1}.uniq
-  error("Cannot output c code to more than one file!", -1) if files.length > 1
-  error("Non-file arguments must be numeric.", -1) unless outputs.all? {|o| o =~ /^(-|\+)?\d+$/}
-  script(CodeGen, true, outputs, files[0])
-end
+script(CodeGen) if __FILE__ == $0

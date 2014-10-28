@@ -142,6 +142,17 @@ class Wire
     Wiring::Node.wire
   end
 
+  def self.description
+    puts <<-END_DESCRIPTION
+## wire.fb:
+##
+## This file prints a detailed description of all the wires that would be
+## needed to solve the given differential equation, based off the results
+## from running KFans on the input equation
+##
+    END_DESCRIPTION
+  end
+
   def self.usage
     puts "ruby wire.rb output+"
     puts "\tArguments are up to four orders to output"
@@ -150,8 +161,9 @@ class Wire
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false, kfan=3, readouts)
-    wiring = Wire.generate(KFans.script(input, quiet, kfan, readouts))
+  def self.script(input)
+    wiring = Wire.generate(KFans.script(input))
+    self.describe
     puts "<wiring>"
     wiring.each {|wire| puts "  - #{wire}"}
     puts "</wiring>"
@@ -159,5 +171,4 @@ class Wire
   end
 end
 
-
-script(Wire, true, 3, ARGV) if __FILE__ == $0
+script(Wire) if __FILE__ == $0

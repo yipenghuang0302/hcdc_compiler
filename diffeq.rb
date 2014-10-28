@@ -4,6 +4,7 @@ require './base'
 require './tokenops'
 
 require 'pp'
+## See description method below for info.
 
 class Tokens
   attr_accessor :quiet
@@ -145,16 +146,51 @@ class Connections
     }
   end
 
+  def self.description
+    puts <<-END_DESCRIPTION
+## diffeq.rb:
+##
+## This file handles parsing a differential equation and outputting:
+##   1) The order of the result (i.e. 2 if y'' = y' + y)
+##   2) The constant term
+##   3) The `adjacency' list for the equation
+##
+## Adjacency:
+##   This tells how each variable or result feeds into another and with
+##   what weight they do so. Thus for the equation
+##      y'' = 2y'y + y
+##   we get the adjancency list (a hash):
+##     {[2]=>{[1]=>[1]},
+##      [1]=>{[0]=>[1], [1, 0]=>[1]},
+##      [0]=>{[1, 0]=>[1], [2]=>[1]},
+##      [1, 0]=>{[2]=>[2]}}}
+##   this means the following:
+##     1st line:
+##       y'' (which is 2) feeds into y' (which is 1) with weight 1
+##       -- this is because y' is the integral of y''
+##     2nd line:
+##       y' (which is 1) feeds into y (which is 0) with weight 1
+##       but it *also* feeds into y'y (which is [1, 0]) with weight 1
+##     3rd line:
+##       y (which is 0) feeds into y'y (which is [1, 0]) with weight 1
+##       but also feeds into y'' (which is 2) with weight 1
+##     4th line:
+##       y'y (which is [1, 0]) feeds into y'' (which is 2) with weight 2
+##
+    END_DESCRIPTION
+  end
+
   def self.usage
     puts "ruby diffeq.rb"
     puts "\tNo arguments used at all"
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false)
-    conn = Connections.new(input, quiet)
+  def self.script(input)
+    conn = Connections.new(input, DIFFEQ_ARGS[:quiet])
     puts "differential equation is: #{conn.instance_eval {@diffeq}.inspect}"
     adjlist = conn.connect
+    self.describe
     puts "<connection-adjlist>"
     pp adjlist
     puts "</connection-adjlist>"
@@ -163,6 +199,4 @@ class Connections
   end
 end
 
-if __FILE__ == $0 then
-  script(Connections, true)
-end
+script(Connections) if __FILE__ == $0

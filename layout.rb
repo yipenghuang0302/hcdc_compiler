@@ -3,6 +3,7 @@
 require './base'
 require './diffeq'
 require 'pp'
+## See description method below for info.
 
 # Change keys so that if we give it args, it finds keys with those args
 class Hash
@@ -256,14 +257,85 @@ class Layout
     }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
+  def self.description
+    puts <<-END_DESCRIPTION
+## layout.rb:
+##
+## This file will consume a differential equation, parse it with diffeq.rb,
+## and then provide interconnection information that allows one to understand
+## how to compute a solution to the equation.
+##
+## layout-factoring
+##   This output is just a maximal factoring of all the terms in the
+##   differential equation that have more than a single factor; single
+##   factor terms don't play any role here at all.
+##
+## layout-layout
+##   This output consists of several values
+##     1) The order of the result (i.e. 2 if y'' = y' + y)
+##     2) A description of an efficient factoring
+##     3) A reference to the final `node' in the layout (i.e. the root)
+##        This should be what gets sent as feedback into the system
+##     4) The layout state
+##
+##   Factoring Description
+##     This is a recursive description of a factoring. A `leaf' or terminating
+##     case is a hash with only two keys--:single and :product, :single is a
+##     list of terms with a single factor; :product is a list of terms that with
+##     multiple factors but each factor is in exactly one term.
+##
+##     The recursive case has a :single key mapping to a list of terms with
+##     a single factor. Then there is a key :factor, which provides the order
+##     of the value being factored out. :across yields a recursive case where
+##     the :factor value was found and removed; :other yields a recursive case
+##     where :factor was not found.
+##
+##     An example may be illustrative at this point
+##       Equation: y''' = 2y''y + y'y' + y'y + y''y'
+##       Layout-factoring: y'(y + y' + y'') + y''y
+##       Factoring Description:
+##         {:single=>[],
+##          :factor=>1,
+##          :across=>{:single=>[0, 1, 2], :product=>[]},
+##          :other=>{:single=>[], :product=>[[2, 0]]}},
+##
+##   Layout State, a hash with the following values:
+##     :mul
+##       this is a hash going from Multiplication Node ID to factors where
+##       the key is the ID (integer), the value for a given key is a hash
+##       with two values, :left and :right. Both point to hashes that have
+##       the same form--a value key :type whose value denotes what the type
+##       of the factor is (:mul, :var, :add, etc) followed by the ID of the
+##       value (i.e. which add, which mul, or what order variable).
+##     :factors
+##       this is a map of `what gets multiplied' to node ID (i.e. something
+##       that should be referenced in the :mul value above). This basically
+##       is just the inverse of the above and is used so that the same exact
+##       multiplication isn't used more than once.
+##     :add
+##       this is similar to :mul--it is a hash mapping add ID's (integers) to
+##       a hash containing only one key, :terms, which maps to a list of values
+##       of the form {:type => sym, :ref => ID} where sym is :mul, :add, or
+##       :var and ID is the identifier for a value of the given type.
+##     :terms
+##       just as :factors provides an inverse for :mul, this does with :add.
+##     :outputs
+##       This is a hash where each key is of the form {:type => sym, :ref => ID}
+##       and the values are lists of `nodes' of the same form that the given
+##       keyed node will output to (i.e. everything needing it).
+##
+    END_DESCRIPTION
+  end
+
   def self.usage
     puts "ruby layout.rb"
     puts "\tNo arguments used at all"
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
-  def self.script(input, quiet=false)
-    layout = Layout.layout(Connections.script(input, quiet))
+  def self.script(input)
+    layout = Layout.layout(Connections.script(input))
+    self.describe
     puts "<layout-factoring>"
     pp layout[:factors].factoring
     puts "</layout-factoring>"
@@ -275,4 +347,4 @@ class Layout
   end
 end
 
-script(Layout, true) if __FILE__ == $0
+script(Layout) if __FILE__ == $0
