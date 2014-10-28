@@ -17,7 +17,7 @@ def process_args(klass)
   OptionParser.new {|opts|
     opts.banner = "Usage: #{File.basename($0)} [options]"
 
-    opts.on("-v", "--verbose", "Print descriptions of each stage as it happens.") {
+    opts.on("-v", "--verbose", "Print descriptions at each stage") {
       DIFFEQ_ARGS[:verbose] = true
     } unless klass.ignore?(:verbose)
 
