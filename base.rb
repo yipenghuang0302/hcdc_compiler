@@ -1,5 +1,56 @@
 #!/usr/bin/env ruby
 
+require 'pp'
+
+DIFFEQ_ARGS = {
+  :verbose => false,
+  :readouts => [],
+  :quiet => true,
+  :kfan => 3,
+  :file => nil,
+  :describe => false
+}
+
+# Process args 
+def process_args
+  args, ignore = [], false
+
+  long_arg = Proc.new {|arg|
+    if arg == "" then
+      ignore = true
+    elsif "verbose".start_with?(arg) then
+      DIFFEQ_ARGS[:verbose] = true
+    elsif "noisy".start_with?(arg) then
+      DIFFEQ_ARGS[:quiet] = false
+    elsif "describe".start_with?(arg) then
+      DIFFEQ_ARGS[:describe] = true
+    elsif arg =~ /^k=(\d+)$/ then
+      DIFFEQ_ARGS[:kfan] = $1.to_i
+    elsif arg =~ /^o=(.*)$/ then
+      DIFFEQ_ARGS[:file] = $1
+    else
+      error("Unknown argument --#{arg}", 1)
+    end
+  }
+
+  ARGV.each {|arg|
+    if ignore then
+      args << arg
+    elsif arg =~ /^--(.*)$/ then
+      long_arg[$1]
+    elsif arg =~ /^\d+$/ then
+      DIFFEQ_ARGS[:readouts] << arg.to_i
+    else
+      error("Unknown argument #{arg}", 1)
+    end
+  }
+  DIFFEQ_ARGS[:readouts].uniq!
+  DIFFEQ_ARGS[:readouts].sort!
+  error("Fanout must be at least 2", 1) if DIFFEQ_ARGS[:kfan] < 2
+
+  args
+end
+
 # Error handling
 def error(msg, code, backtrace=false)
   $stderr.puts("ERROR: #{msg}")
@@ -15,8 +66,17 @@ def readDiffEq
   diffeq
 end
 
+# Write out descriptions if requested
+class Class
+  def describe
+    self.description if DIFFEQ_ARGS[:verbose] || DIFFEQ_ARGS[:describe]
+    exit(0) if DIFFEQ_ARGS[:describe]
+  end
+end
+
 # For any given class, run it's script class method, adding a diffeq as the first parameter
 def script(klass, *args, &block)
+  args += process_args
   if $stdin.tty? then
     klass.usage
     $stdout.puts
