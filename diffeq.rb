@@ -183,6 +183,10 @@ class Connections
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
+  def self.ignore
+    [:file, :kfan, :readouts]
+  end
+
   def self.script(input)
     conn = Connections.new(input, DIFFEQ_ARGS[:quiet])
     puts "differential equation is: #{conn.instance_eval {@diffeq}.inspect}"

@@ -331,6 +331,10 @@ class Layout
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
+  def self.ignore
+    Connections.ignore
+  end
+
   def self.script(input)
     layout = Layout.layout(Connections.script(input))
     self.describe

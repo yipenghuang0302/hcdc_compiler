@@ -149,6 +149,10 @@ class Wire
     END_DESCRIPTION
   end
 
+  def self.ignore
+    KFans.ignore
+  end
+
   def self.usage
     puts "ruby wire.rb output+"
     puts "\tArguments are up to four orders to output"

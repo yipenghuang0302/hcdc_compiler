@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'optparse'
 
 DIFFEQ_ARGS = {
   :verbose => false,
@@ -12,43 +13,36 @@ DIFFEQ_ARGS = {
 }
 
 # Process args 
-def process_args
-  args, ignore = [], false
+def process_args(klass)
+  OptionParser.new {|opts|
+    opts.banner = "Usage: #{File.basename($0)} [options]"
 
-  long_arg = Proc.new {|arg|
-    if arg == "" then
-      ignore = true
-    elsif "verbose".start_with?(arg) then
+    opts.on("-v", "--verbose", "Print descriptions of each stage as it happens.") {
       DIFFEQ_ARGS[:verbose] = true
-    elsif "noisy".start_with?(arg) then
+    } unless klass.ignore?(:verbose)
+
+    opts.on("-n", "--noisy", "Print information during diffeq parsing.") {
       DIFFEQ_ARGS[:quiet] = false
-    elsif "describe".start_with?(arg) then
+    } unless klass.ignore?(:quiet)
+
+    opts.on("-o", "--output", "Output to the given C file.") {|file|
+      DIFFEQ_ARGS[:file] = file
+    } unless klass.ignore?(:file)
+
+    opts.on("-k", "--kfans", "Select fanout for fans.") {|fanout|
+      error("Fanout must be an integer > 1, but is `#{fanout}' instead.", 1) unless fanout =~ /^\d+$/ && fanout.to_i > 1
+      DIFFEQ_ARGS[:kfan] = fanout.to_i
+    } unless klass.ignore?(:kfan)
+
+    opts.on_tail("-h", "--help", "Show this message") {
+      $stdout.puts opts
       DIFFEQ_ARGS[:describe] = true
-    elsif arg =~ /^k=(\d+)$/ then
-      DIFFEQ_ARGS[:kfan] = $1.to_i
-    elsif arg =~ /^o=(.*)$/ then
-      DIFFEQ_ARGS[:file] = $1
-    else
-      error("Unknown argument --#{arg}", 1)
-    end
-  }
+    }
+  }.parse!
 
-  ARGV.each {|arg|
-    if ignore then
-      args << arg
-    elsif arg =~ /^--(.*)$/ then
-      long_arg[$1]
-    elsif arg =~ /^\d+$/ then
-      DIFFEQ_ARGS[:readouts] << arg.to_i
-    else
-      error("Unknown argument #{arg}", 1)
-    end
-  }
-  DIFFEQ_ARGS[:readouts].uniq!
-  DIFFEQ_ARGS[:readouts].sort!
-  error("Fanout must be at least 2", 1) if DIFFEQ_ARGS[:kfan] < 2
-
-  args
+  readouts, args = ARGV.partition {|a| a =~ /^\d+$/}
+  DIFFEQ_ARGS[:readouts] = readouts.map {|i| i.to_i}.sort.uniq
+  klass.ignore?(:readouts) ? ARGV : args
 end
 
 # Error handling
@@ -69,18 +63,28 @@ end
 # Write out descriptions if requested
 class Class
   def describe
-    self.description if DIFFEQ_ARGS[:verbose] || DIFFEQ_ARGS[:describe]
-    exit(0) if DIFFEQ_ARGS[:describe]
+    self.description if DIFFEQ_ARGS[:verbose]
+  end
+
+  def ignore?(arg)
+    self.ignore.include?(arg)
   end
 end
 
 # For any given class, run it's script class method, adding a diffeq as the first parameter
 def script(klass, *args, &block)
-  args += process_args
+  args += process_args(klass)
+  if DIFFEQ_ARGS[:describe] then
+    $stdout.puts
+    klass.description
+    exit(1)
+  end
+
   if $stdin.tty? then
     klass.usage
     $stdout.puts
   end
+
   klass.script(readDiffEq, *args, &block)
 end
 

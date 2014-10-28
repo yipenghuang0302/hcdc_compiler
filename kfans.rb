@@ -67,6 +67,10 @@ class KFans
     END_DESCRIPTION
   end
 
+  def self.ignore
+    Fanout.ignore - [:kfan]
+  end
+
   def self.usage
     puts "ruby kfans.rb output+"
     puts "\tArguments are up to four orders to output"

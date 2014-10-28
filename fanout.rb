@@ -131,6 +131,10 @@ class Fanout
     END_DESCRIPTION
   end
 
+  def self.ignore
+    Layout.ignore - [:readouts]
+  end
+
   def self.script(input)
     layout = Layout.script(input)
     readouts = DIFFEQ_ARGS[:readouts].select {|i|

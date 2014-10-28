@@ -77,6 +77,10 @@ class CodeGen
     puts "\tIf input is not piped in, a diffeq will be requested"
   end
 
+  def self.ignore
+    Wire.ignore - [:file]
+  end
+
   def self.script(input)
     connections = Wire.script(input)
     file = DIFFEQ_ARGS[:file]
