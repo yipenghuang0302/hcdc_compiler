@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 
-require './base'
 require './tokenops'
-
-require 'pp'
 ## See description method below for info.
 
 class Tokens

@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require './base'
 require './layout'
 ## See description method below for info.
 

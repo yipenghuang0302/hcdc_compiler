@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 
-require './base'
 require './diffeq'
-require 'pp'
 ## See description method below for info.
 
 # Change keys so that if we give it args, it finds keys with those args

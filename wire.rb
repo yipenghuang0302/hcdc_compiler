@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require './base'
 require './kfans'
 
 module Wiring
