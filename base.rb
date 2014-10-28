@@ -146,6 +146,11 @@ class Hash
     return self.old_keys if args.empty?
     self.keys.select {|k| args.include?(self[k])}
   end
+
+  def subhash(&block)
+    result = self.select(&block)
+    Array === result ? result.inject(Hash.new) {|h, (k, v)| h.update(k => v)} : result
+  end
 end
 
 # A graph is just a hash of hashes.

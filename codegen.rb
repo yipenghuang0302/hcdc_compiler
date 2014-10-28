@@ -5,7 +5,7 @@ require './wire'
 module Wiring
 class Node
   def single
-    is_a?(Int)
+    self.type == :int
   end
 
   def row
@@ -13,7 +13,7 @@ class Node
   end
 
   def column
-    type = base_class_name.downcase
+    type = self.type.to_s
     col = single ? nil : (index % 2 == 0) ? 'l' : 'r'
     ["col", type, col].compact.join('_')
   end

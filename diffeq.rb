@@ -28,20 +28,20 @@ class Tokens
   def parse!
     return nil if @parsed
     @parsed = true
-    self.show("Tokens are")
-        .prohibitX("Checking that x is not present")
-        .parseNumbers("With numbers parsed")
-        .parseSigns("With signs parsed")
-        .checkPrimes("With primes validated")
-        .balanceToZero("All terms on the left")
-        .parsePrimes("With primes parsed")
-        .parseCoefs("With coefficients parsed")
-        .parseTerms("With terms parsed")
-        .combineTerms("With terms combined")
-        .dropZeroes("Without zero coefs")
-        .normalize("Normalizing so that y is lowest order term")
-        .monic("Monic")
-        .asEquation("As an equation")
+    self.show("Tokens are").
+         prohibitX("Checking that x is not present").
+         parseNumbers("With numbers parsed").
+         parseSigns("With signs parsed").
+         checkPrimes("With primes validated").
+         balanceToZero("All terms on the left").
+         parsePrimes("With primes parsed").
+         parseCoefs("With coefficients parsed").
+         parseTerms("With terms parsed").
+         combineTerms("With terms combined").
+         dropZeroes("Without zero coefs").
+         normalize("Normalizing so that y is lowest order term").
+         monic("Monic").
+         asEquation("As an equation")
     return self
   end
 

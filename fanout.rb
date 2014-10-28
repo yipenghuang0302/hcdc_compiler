@@ -5,7 +5,7 @@ require './layout'
 
 class Fanout
   def self.calculateFans(layout)
-    fanid, fans = 0, layout[:state][:outputs].select {|key, value| value.length > 1}
+    fanid, fans = 0, layout[:state][:outputs].subhash {|key, value| value.length > 1}
     fanning2id, id2fanning = {:var => {}, :mul => {}, :fans => {}, :add => {}}, Hash.new
 
     fans.keys.sort_by {|fanning| [fanning[:type].to_s, fanning[:ref]]}.each {|fanning|

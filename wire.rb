@@ -60,26 +60,39 @@ class Node
     additions + rest
   end
 
-  attr_reader :index, :key, :data, :outputs
+  attr_reader :index, :key, :data, :outputs, :type
+  @@count = {
+    :int => 0,
+    :mul => 0,
+    :add => 0,
+    :fan => 0,
+    :output => 0
+  }
+  def self.count(type)
+    @@count[type]
+  end
 
-  def initialize(index, key)
-    sym = self.is_a?(Int) ? :var : self.class.to_s.downcase.split(/::/)[-1].intern
+  def initialize(type, key)
+    sym = type == :var ? :int : type
+    index = @@count[sym]
+    @@count[sym] += 1
 
-    hkey = {:type => sym, :ref => key}
-    data = @@fanout[sym][key]
+    hkey = {:type => type, :ref => key}
+    data = @@fanout[type][key]
     outputs = @@fanout[:outputs][hkey]
 
     @@nodes[hkey] = self
     @index, @key, @data, @outputs = index, hkey, data, outputs
     @input, @output = 0, 0
+    @type = sym
   end
 
   def to_s
-    "(<#{self.base_class_name}:#{@index}>)"
+    "(<#{@type.to_s}:#{@index}>)"
   end
 
   def inspect
-    "(<#{self.base_class_name}:#{@index} -- #{@key.inspect} => #{@data.inspect} #> #{@outputs.inspect}>)"
+    "(<#{@type.to_s}:#{@index} -- #{@key.inspect} => #{@data.inspect} #> #{@outputs.inspect}>)"
   end
 
   def nextInput
@@ -94,21 +107,6 @@ class Node
     result
   end
 end
-
-Mul, Fan, Int, Add, Output = *(1..5).map {
-  Class.new(Node) do
-    self.class_variable_set("@@count", 0)
-    def initialize(key)
-      count = self.class.class_variable_get("@@count")
-      super(count, key)
-      self.class.class_variable_set("@@count", count + 1)
-    end
-
-    def self.count
-      self.class_variable_get("@@count")
-    end
-  end
-}
 end
 
 # Wire as a verb :-)
@@ -124,18 +122,17 @@ class Wire
     fanout[:var] = Hash.new
     0.upto(fanout[:result] - 1) {|order| fanout[:var][order] = {:type => :var, :ref => order}} 
 
-    byclass = {:var => Wiring::Int, :mul => Wiring::Mul, :fan => Wiring::Fan, :add => Wiring::Add, :output => Wiring::Output}
     Wiring::Node.fanout = fanout
     [:var, :mul, :fan, :add, :output].each {|node|
       fanout[node].keys.sort.each {|key|
-        byclass[node].new(key)
+        Wiring::Node.new(node, key)
       }
     }
 
-    error("Not enough integrators to solve #{fanout[:result]} order equation!", -1) if Wiring::Int.count > @@nums[:ints]
-    error("Not enough multipliers available!", -1) if Wiring::Mul.count > @@nums[:muls]
-    error("Not enough fanouts available!", -1) if Wiring::Fan.count > @@nums[:fans]
-    error("Not enough outputs available!", -1) if Wiring::Output.count > @@nums[:outs]
+    error("Not enough integrators to solve #{fanout[:result]} order equation!", -1) if Wiring::Node.count(:int) > @@nums[:ints]
+    error("Not enough multipliers available!", -1) if Wiring::Node.count(:mul) > @@nums[:muls]
+    error("Not enough fanouts available!", -1) if Wiring::Node.count(:fan) > @@nums[:fans]
+    error("Not enough outputs available!", -1) if Wiring::Node.count(:output) > @@nums[:outs]
     ## Wirings merely connect outputs to inputs (i.e. it goes `forward')
 
     Wiring::Node.wire

@@ -28,7 +28,7 @@ class KFans
     fanout[:fan][fanid] = tosplit
     outputs = fanout[:outputs][tosplit]
     front, back = outputs.take(kfan-1), outputs.drop(kfan-1)
-    fanout[:outputs][tosplit] = [*front, fanto]
+    fanout[:outputs][tosplit] = front + [fanto]
     fanout[:outputs][fanto] = *back
 
     back.reject {|key| [:var, :output].include?(key[:type])}.each {|key|
