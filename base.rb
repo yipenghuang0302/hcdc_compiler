@@ -68,6 +68,7 @@ end
 class Class
   def describe
     if DIFFEQ_ARGS[:verbose] then
+      $stdout.puts "## #{self.source}"
       $stdout.puts "##"
       $stdout.puts self.description.lines.map {|i| "## " + i}.join("")
       $stdout.puts "##"

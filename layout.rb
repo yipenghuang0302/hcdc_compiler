@@ -255,6 +255,10 @@ class Layout
     }     # `Inverse' of factor -- maps terms to factor sequence
   end
 
+  def self.source
+    "layout.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This file will consume a differential equation, parse it with diffeq.rb,

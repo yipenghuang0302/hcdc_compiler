@@ -57,6 +57,10 @@ class KFans
     })
   end
 
+  def self.source
+    "kfans.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This merely takes the output of fanout.rb and adds fans so that each fan

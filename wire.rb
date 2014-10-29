@@ -138,6 +138,10 @@ class Wire
     Wiring::Node.wire
   end
 
+  def self.source
+    "wire.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This file prints a detailed description of all the wires that would be

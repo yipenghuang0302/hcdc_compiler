@@ -143,6 +143,10 @@ class Connections
     }
   end
 
+  def self.source
+    "diffeq.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This file handles parsing a differential equation and outputting:

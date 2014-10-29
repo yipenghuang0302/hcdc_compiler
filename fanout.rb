@@ -85,6 +85,10 @@ class Fanout
       :outputs => layout[:state][:outputs] }
   end
 
+  def self.source
+    "fanout.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This file will acquire the layout information for a differential equation

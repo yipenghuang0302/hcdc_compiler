@@ -59,6 +59,10 @@ end
 end
 
 class CodeGen
+  def self.source
+    "codegen.rb"
+  end
+
   def self.description
     <<-END_DESCRIPTION
 This file outputs the C-code that represents the results from wire.rb
