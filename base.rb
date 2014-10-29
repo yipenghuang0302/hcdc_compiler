@@ -18,7 +18,7 @@ def process_args(klass)
   options = OptionParser.new {|opts|
     opts.banner = "Usage: #{File.basename($0)} [options]"
 
-    opts.on("-v", "--verbose", "Print descriptions at each stage") {
+    opts.on("-v", "--verbose", "Print descriptions at each stage.") {
       DIFFEQ_ARGS[:verbose] = true
     } unless klass.ignore?(:verbose)
 
@@ -35,7 +35,7 @@ def process_args(klass)
       DIFFEQ_ARGS[:kfan] = fanout.to_i
     } unless klass.ignore?(:kfan)
 
-    opts.on_tail("-h", "--help", "Show this message") {
+    opts.on_tail("-h", "--help", "Show this message.") {
       $stdout.puts opts
       DIFFEQ_ARGS[:describe] = true
     }
