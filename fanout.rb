@@ -86,40 +86,37 @@ class Fanout
   end
 
   def self.description
-    puts <<-END_DESCRIPTION
-## fanout.rb:
-##
-## This file will acquire the layout information for a differential equation
-## using layout.rb. The resulting information is then transformed to make use
-## of `fan' nodes, which are the only nodes that can genuinely have more than
-## a single output. The output of this file is a hash containing:
-##   1) A reference to the root node (i.e. the node that should feedback into
-##      the high order term that is the result of the equation). The node is
-##      of the form {:type => type, :ref => ID} where type is either :mul,
-##      :add, :var, or :fan and ID is which mul, add, var, or fan it is.
-##   2) The order of the result
-##   3) A hash going from Multiplication Node ID to factors where the key
-##      is the ID (integer), the value for a given key is a hash with two
-##      values, :left and :right. Both point to hashes that have the same
-##      form--a value key :type whose value denotes what the type of the
-##      factor is (:mul, :var, :add, :fan, etc) followed by the ID of the
-##      value (i.e. which add, which mul, or what order variable).
-##   4) Similar to the above, a hash mapping add ID's (integers) to a hash
-##      containing only one key, :terms, which maps to a list of values of
-##      the form {:type => sym, :ref => ID} where sym is :mul, :add, :fan,
-##      or :var and ID is the identifier for a value of the given type
-##   5) In the same vein as above, but now a hash mapping fan nodes (keyed
-##      by ID) to a hash mapping the fan's output to a given node. outputs
-##      are indexed by integers starting at 0.
-##   6) A hash where each key is of the form {:type => sym, :ref => ID}
-##      and the values are lists of `nodes' of the same form that the
-##      given keyed node will output to (i.e. everything needing it).
-##
-## An additional note is that if readouts are given, then connections will
-## be added to the given output from the given variable value. The outputs
-## will be directed to nodes of the form {:type => :output, :ref => ID} for
-## a given output and the output of such a node is []
-##
+    <<-END_DESCRIPTION
+This file will acquire the layout information for a differential equation
+using layout.rb. The resulting information is then transformed to make use
+of `fan' nodes, which are the only nodes that can genuinely have more than
+a single output. The output of this file is a hash containing:
+  1) A reference to the root node (i.e. the node that should feedback into
+     the high order term that is the result of the equation). The node is
+     of the form {:type => type, :ref => ID} where type is either :mul,
+     :add, :var, or :fan and ID is which mul, add, var, or fan it is.
+  2) The order of the result
+  3) A hash going from Multiplication Node ID to factors where the key
+     is the ID (integer), the value for a given key is a hash with two
+     values, :left and :right. Both point to hashes that have the same
+     form--a value key :type whose value denotes what the type of the
+     factor is (:mul, :var, :add, :fan, etc) followed by the ID of the
+     value (i.e. which add, which mul, or what order variable).
+  4) Similar to the above, a hash mapping add ID's (integers) to a hash
+     containing only one key, :terms, which maps to a list of values of
+     the form {:type => sym, :ref => ID} where sym is :mul, :add, :fan,
+     or :var and ID is the identifier for a value of the given type
+  5) In the same vein as above, but now a hash mapping fan nodes (keyed
+     by ID) to a hash mapping the fan's output to a given node. outputs
+     are indexed by integers starting at 0.
+  6) A hash where each key is of the form {:type => sym, :ref => ID}
+     and the values are lists of `nodes' of the same form that the
+     given keyed node will output to (i.e. everything needing it).
+
+An additional note is that if readouts are given, then connections will
+be added to the given output from the given variable value. The outputs
+will be directed to nodes of the form {:type => :output, :ref => ID} for
+a given output and the output of such a node is []
     END_DESCRIPTION
   end
 

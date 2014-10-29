@@ -67,7 +67,11 @@ end
 # Write out descriptions if requested
 class Class
   def describe
-    self.description if DIFFEQ_ARGS[:verbose]
+    if DIFFEQ_ARGS[:verbose] then
+      $stdout.puts "##"
+      $stdout.puts self.description.lines.map {|i| "## " + i}.join("")
+      $stdout.puts "##"
+    end
   end
 
   def ignore?(arg)
@@ -80,7 +84,8 @@ def script(klass, *args, &block)
   args += process_args(klass)
   if DIFFEQ_ARGS[:describe] then
     $stdout.puts
-    klass.description
+    $stdout.puts klass.description
+    $stdout.puts
     exit(1)
   end
 

@@ -60,11 +60,8 @@ end
 
 class CodeGen
   def self.description
-    puts <<-END_DESCRIPTION
-## codegen.rb:
-##
-## This file outputs the C-code that represents the results from wire.rb
-##
+    <<-END_DESCRIPTION
+This file outputs the C-code that represents the results from wire.rb
     END_DESCRIPTION
   end
 

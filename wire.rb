@@ -139,13 +139,10 @@ class Wire
   end
 
   def self.description
-    puts <<-END_DESCRIPTION
-## wire.fb:
-##
-## This file prints a detailed description of all the wires that would be
-## needed to solve the given differential equation, based off the results
-## from running KFans on the input equation
-##
+    <<-END_DESCRIPTION
+This file prints a detailed description of all the wires that would be
+needed to solve the given differential equation, based off the results
+from running KFans on the input equation
     END_DESCRIPTION
   end
 

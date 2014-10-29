@@ -58,12 +58,9 @@ class KFans
   end
 
   def self.description
-    puts <<-END_DESCRIPTION
-## kfans.rb:
-##
-## This merely takes the output of fanout.rb and adds fans so that each fan
-## has at most fanout 3. The fanout description can be seen on its own.
-##
+    <<-END_DESCRIPTION
+This merely takes the output of fanout.rb and adds fans so that each fan
+has at most fanout 3. The fanout description can be seen on its own.
     END_DESCRIPTION
   end
 
