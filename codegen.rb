@@ -68,15 +68,6 @@ class CodeGen
     END_DESCRIPTION
   end
 
-  def self.usage
-    puts "ruby fanout.rb -o=file.c output+"
-    puts "\t-o outputs to file.c (can be any file with (c|h)(pp)? extension"
-    puts "\tRemaining arguments are up to four orders to output"
-    puts "\t-- order 0 is y, order 1 is y', can go up to the LHS of the equation"
-    puts "\t-- outputs are uniqued and sorted"
-    puts "\tIf input is not piped in, a diffeq will be requested"
-  end
-
   def self.ignore
     Wire.ignore - [:file]
   end

@@ -3,6 +3,7 @@
 require 'pp'
 require 'optparse'
 
+$help = nil
 DIFFEQ_ARGS = {
   :verbose => false,
   :readouts => [],
@@ -14,7 +15,7 @@ DIFFEQ_ARGS = {
 
 # Process args 
 def process_args(klass)
-  OptionParser.new {|opts|
+  options = OptionParser.new {|opts|
     opts.banner = "Usage: #{File.basename($0)} [options]"
 
     opts.on("-v", "--verbose", "Print descriptions at each stage") {
@@ -38,7 +39,10 @@ def process_args(klass)
       $stdout.puts opts
       DIFFEQ_ARGS[:describe] = true
     }
-  }.parse!
+  }
+
+  $help = options.help
+  options.parse!
 
   readouts, args = ARGV.partition {|a| a =~ /^\d+$/}
   DIFFEQ_ARGS[:readouts] = readouts.map {|i| i.to_i}.sort.uniq
@@ -81,7 +85,8 @@ def script(klass, *args, &block)
   end
 
   if $stdin.tty? then
-    klass.usage
+    $stdout.puts $help unless $help.nil?
+    $stdout.puts "If input is not piped in, a diffeq will be requested."
     $stdout.puts
   end
 

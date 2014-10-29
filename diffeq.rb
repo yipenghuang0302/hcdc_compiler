@@ -177,12 +177,6 @@ class Connections
     END_DESCRIPTION
   end
 
-  def self.usage
-    puts "ruby diffeq.rb"
-    puts "\tNo arguments used at all"
-    puts "\tIf input is not piped in, a diffeq will be requested"
-  end
-
   def self.ignore
     [:file, :kfan, :readouts]
   end
